@@ -7,4 +7,4 @@ async function bootstrap() {
   await app.listen(3000); // Gateway chính HTTP API
   console.log(`Gateway is running on http://localhost:3000`);
 }
-bootstrap();
+void bootstrap();
