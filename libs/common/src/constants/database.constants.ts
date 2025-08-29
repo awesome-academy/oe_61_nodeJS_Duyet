@@ -1,0 +1,50 @@
+export const DECIMAL_PRECISION = 10;
+export const DECIMAL_SCALE = 2;
+
+export enum BookingStatus {
+  CANCELED = 0,
+  BOOKED = 1,
+  CHECK_IN = 2,
+  CHECK_OUT = 3,
+}
+
+export enum ItemType {
+  ROOM = 0,
+  SERVICE = 1,
+  SURCHARGE = 2,
+  DISCOUNT = 3,
+}
+
+export enum PaymentMethod {
+  CASH = 0,
+  BANK_TRANSFER = 1,
+  CARD = 2,
+}
+
+export enum InvoiceStatus {
+  PENDING = 1,
+  PAID = 2,
+  CANCELED = 3,
+}
+
+export enum DiscountType {
+  PERCENTAGE = 0,
+  FIXED_AMOUNT = 1,
+}
+
+export enum RoomStatus {
+  MAINTENANCE = 0,
+  AVAILABLE = 1,
+  OCCUPIED = 2,
+}
+
+export enum ShiftType {
+  MORNING = 0,
+  AFTERNOON = 1,
+  NIGHT = 2,
+}
+
+export enum UserStatus {
+  INACTIVE = 0,
+  ACTIVE = 1,
+}
