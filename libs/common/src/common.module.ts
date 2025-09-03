@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { CommonService } from './common.service';
 import { I18nModule, AcceptLanguageResolver, QueryResolver } from 'nestjs-i18n';
 import * as path from 'path';
+import { CacheModule } from '@nestjs/cache-manager';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { redisStore } from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -16,8 +19,18 @@ import * as path from 'path';
         AcceptLanguageResolver,
       ],
     }),
+    CacheModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        store: await redisStore({
+          url: configService.get<string>('REDIS_URL'),
+        }),
+      }),
+      isGlobal: true,
+    }),
   ],
   providers: [CommonService],
-  exports: [CommonService],
+  exports: [CommonService, CacheModule],
 })
 export class CommonModule {}

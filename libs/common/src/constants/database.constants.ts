@@ -1,5 +1,6 @@
 export const DECIMAL_PRECISION = 10;
 export const DECIMAL_SCALE = 2;
+export const CUSTOMER_ID = 3;
 
 export enum BookingStatus {
   CANCELED = 0,

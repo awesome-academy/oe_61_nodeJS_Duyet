@@ -1,0 +1,7 @@
+{
+  "IS_NOT_EMPTY": "{property} không được để trống.",
+  "IS_EMAIL": "{property} phải là một địa chỉ email hợp lệ.",
+  "MIN_LENGTH": "{property} phải có độ dài lớn hơn hoặc bằng {constraints.0} ký tự.",
+  "MAX_LENGTH": "{property} phải có độ dài nhỏ hơn hoặc bằng {constraints.0} ký tự.",
+  "IS_UUID": "{property} phải là một UUID hợp lệ."
+}

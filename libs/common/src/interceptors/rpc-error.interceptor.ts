@@ -6,12 +6,8 @@ import {
   NestInterceptor,
   Logger,
 } from '@nestjs/common';
-import { RpcException } from '@nestjs/microservices';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { RpcError } from '../constants/database.constants';
-
-// Define a type for the structured RPC error
 
 @Injectable()
 export class RpcErrorInterceptor implements NestInterceptor {
@@ -19,37 +15,25 @@ export class RpcErrorInterceptor implements NestInterceptor {
 
   intercept(_context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
-      catchError((error: unknown) => {
-        this.logger.error('RpcErrorInterceptor caught error:', error);
-
+      catchError((error) => {
+        if (error instanceof HttpException) {
+          return throwError(() => error);
+        }
         if (
           typeof error === 'object' &&
           error !== null &&
           'message' in error &&
           'status' in error
         ) {
-          const typedError = error as RpcError;
+          const typedError = error as { message: string; status: number };
           return throwError(
             () => new HttpException(typedError.message, typedError.status),
           );
         }
-
-        if (error instanceof RpcException) {
-          const rpcError = error.getError();
-          if (
-            typeof rpcError === 'object' &&
-            rpcError !== null &&
-            'message' in rpcError &&
-            'status' in rpcError
-          ) {
-            const typedError = rpcError as RpcError;
-            return throwError(
-              () => new HttpException(typedError.message, typedError.status),
-            );
-          }
-        }
-
-        return throwError(() => error);
+        this.logger.error('Unknown error type caught by interceptor:', error);
+        return throwError(
+          () => new HttpException('Internal Server Error', 500),
+        );
       }),
     );
   }

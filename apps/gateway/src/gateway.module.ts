@@ -8,6 +8,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
+import { BullModule } from '@nestjs/bull';
+import { UserAuthController } from './user-auth.controller';
+import { APP_PIPE } from '@nestjs/core';
+import { I18nValidationPipe } from '@app/common/pipes/i18n-validation.pipe';
 
 @Module({
   imports: [
@@ -23,16 +27,6 @@ import { redisStore } from 'cache-manager-redis-store';
         },
       }),
     }),
-    CacheModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        store: await redisStore({
-          url: configService.get<string>('REDIS_URL'),
-        }),
-      }),
-      isGlobal: true,
-    }),
     CommonModule,
     ClientsModule.register([
       {
@@ -44,8 +38,22 @@ import { redisStore } from 'cache-manager-redis-store';
         },
       },
     ]),
+    BullModule.forRoot({
+      redis: {
+        host: 'localhost',
+        port: 6379,
+      },
+    }),
   ],
-  controllers: [GatewayController, AuthController],
-  providers: [GatewayService, RpcErrorInterceptor, JwtAuthGuard],
+  controllers: [GatewayController, AuthController, UserAuthController],
+  providers: [
+    GatewayService,
+    RpcErrorInterceptor,
+    JwtAuthGuard,
+    {
+      provide: APP_PIPE,
+      useClass: I18nValidationPipe,
+    },
+  ],
 })
 export class GatewayModule {}

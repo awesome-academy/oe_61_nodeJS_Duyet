@@ -35,10 +35,10 @@ export class User extends BaseEntity {
   status: UserStatus;
 
   @Column({ type: 'varchar', nullable: true })
-  verification_token: string;
+  verification_token: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  password_reset_token: string;
+  password_reset_token: string | null;
 
   @ManyToOne(() => Role, (role) => role.users)
   @JoinColumn({ name: 'role_id' })
