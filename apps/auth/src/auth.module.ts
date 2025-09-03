@@ -1,18 +1,20 @@
 import { Module } from '@nestjs/common';
-import { GatewayController } from './gateway.controller';
-import { GatewayService } from './gateway.service';
-import { CommonModule, RpcErrorInterceptor, JwtAuthGuard } from '@app/common';
 import { AuthController } from './auth.controller';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { AuthService } from './auth.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
-import { CacheModule } from '@nestjs/cache-manager';
+import { DatabaseModule, Role, User } from '@app/database';
+import { CommonModule } from '@app/common';
 import { redisStore } from 'cache-manager-redis-store';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: './.env' }),
+    DatabaseModule,
     CommonModule,
+    TypeOrmModule.forFeature([User, Role]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -33,19 +35,8 @@ import { redisStore } from 'cache-manager-redis-store';
       }),
       isGlobal: true,
     }),
-    CommonModule,
-    ClientsModule.register([
-      {
-        name: 'AUTH_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 3001,
-        },
-      },
-    ]),
   ],
-  controllers: [GatewayController, AuthController],
-  providers: [GatewayService, RpcErrorInterceptor, JwtAuthGuard],
+  controllers: [AuthController],
+  providers: [AuthService],
 })
-export class GatewayModule {}
+export class AuthModule {}
