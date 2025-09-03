@@ -7,6 +7,7 @@ import { RpcException } from '@nestjs/microservices';
 import { ActiveUserDto } from '@app/common/dto/token-active.dto';
 import { RegisterUserDto } from '@app/common/dto/register-user.dto';
 import { validate } from 'class-validator';
+import { UserLoginDto } from '@app/common/dto/user-login.dto';
 
 // 1. Create a mock for the AuthService to isolate the controller
 const mockAuthService = {
@@ -14,6 +15,7 @@ const mockAuthService = {
   logout: jest.fn(),
   userRegister: jest.fn(),
   userActive: jest.fn(),
+  userLogin: jest.fn(),
 };
 
 describe('AuthController', () => {
@@ -52,6 +54,14 @@ describe('AuthController', () => {
         password: 'password123',
       } as AdminLoginDto,
       lang: 'vi',
+    };
+
+    // Helper function to create DTO instances for validation tests
+    const createAdminDto = (data: Partial<AdminLoginDto>): AdminLoginDto => {
+      const dto = new AdminLoginDto();
+      dto.email = data.email || '';
+      dto.password = data.password || '';
+      return dto;
     };
 
     // --- Scenario 1: Successful Login ---
@@ -124,6 +134,46 @@ describe('AuthController', () => {
         genericError,
       );
     });
+
+    describe('for empty fields', () => {
+      it('should fail validation if email is empty', async () => {
+        const invalidData = createAdminDto({
+          password: 'password123',
+        });
+        const errors = await validate(invalidData);
+        expect(errors.length).toBeGreaterThan(0);
+        expect(errors.some((e) => e.property === 'email')).toBeTruthy();
+      });
+
+      it('should fail validation if password is empty', async () => {
+        const invalidData = createAdminDto({
+          email: 'admin@hotel.com',
+        });
+        const errors = await validate(invalidData);
+        expect(errors.length).toBeGreaterThan(0);
+        expect(errors.some((e) => e.property === 'password')).toBeTruthy();
+      });
+    });
+
+    it('should fail validation for an invalid email format', async () => {
+      const invalidData = createAdminDto({
+        email: 'invalid-email',
+        password: 'password123',
+      });
+      const errors = await validate(invalidData);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.property === 'email')).toBeTruthy();
+    });
+
+    it('should fail validation if password is shorter than 6 characters', async () => {
+      const invalidData = createAdminDto({
+        email: 'admin@hotel.com',
+        password: '123',
+      });
+      const errors = await validate(invalidData);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.property === 'password')).toBeTruthy();
+    });
   });
 
   // --- Test suite for the 'logout' handler ---
@@ -169,11 +219,11 @@ describe('AuthController', () => {
       lang: 'vi',
     };
 
-    const createDto = (data: any): RegisterUserDto => {
+    const createDto = (data: Partial<RegisterUserDto>): RegisterUserDto => {
       const dto = new RegisterUserDto();
-      dto.name = data.name;
-      dto.email = data.email;
-      dto.password = data.password;
+      dto.name = data.name || '';
+      dto.email = data.email || '';
+      dto.password = data.password || '';
       return dto;
     };
 
@@ -331,6 +381,121 @@ describe('AuthController', () => {
       expect(
         errors.some((e) => e.property === 'verification_token'),
       ).toBeTruthy();
+    });
+  });
+  describe('userLogin', () => {
+    const userLoginPayload = {
+      userLoginDto: {
+        email: 'customer@hotel.com',
+        password: 'password123',
+      } as UserLoginDto,
+      lang: 'vi',
+    };
+
+    // Helper function to create DTO instances for validation tests
+    const createLoginDto = (data: Partial<UserLoginDto>): UserLoginDto => {
+      const dto = new UserLoginDto();
+      dto.email = data.email || '';
+      dto.password = data.password || '';
+      return dto;
+    };
+
+    // Business Logic Test: Successful login
+    it('should call authService.userLogin and return success', async () => {
+      const successResponse = {
+        status: true,
+        message: 'Đăng nhập thành công!',
+        data: {
+          accessToken: 'mockUserToken',
+          user: {
+            id: 2,
+            email: 'customer@hotel.com',
+            name: 'Customer User',
+            role: 'customer',
+            avatar: null,
+          },
+        },
+      };
+      mockAuthService.userLogin.mockResolvedValue(successResponse);
+
+      const result = await controller.userLogin(userLoginPayload);
+
+      expect(service.userLogin).toHaveBeenCalledWith(userLoginPayload);
+      expect(result).toEqual(successResponse);
+      expect(service.userLogin).toHaveBeenCalledTimes(1);
+    });
+
+    // Business Logic Test: Invalid credentials
+    it('should propagate RpcException if credentials are wrong', async () => {
+      const rpcError = new RpcException({
+        message: 'Email hoặc mật khẩu không hợp lệ.',
+        status: 401,
+      });
+      mockAuthService.userLogin.mockRejectedValue(rpcError);
+
+      await expect(() =>
+        controller.userLogin(userLoginPayload),
+      ).rejects.toThrow(rpcError);
+      expect(service.userLogin).toHaveBeenCalledTimes(1);
+    });
+
+    // Business Logic Test: Inactive account
+    it('should propagate RpcException if account is inactive', async () => {
+      const rpcError = new RpcException({
+        message: 'Tài khoản của bạn đã bị vô hiệu hóa.',
+        status: 401,
+      });
+      mockAuthService.userLogin.mockRejectedValue(rpcError);
+
+      await expect(() =>
+        controller.userLogin(userLoginPayload),
+      ).rejects.toThrow(rpcError);
+      expect(service.userLogin).toHaveBeenCalledTimes(1);
+    });
+
+    // --- Validation Tests ---
+
+    describe('for empty fields', () => {
+      it('should fail validation if email is empty', async () => {
+        // This test covers the case where email is an empty string.
+        const invalidData = createLoginDto({
+          email: '', // Explicitly setting to empty string for clarity
+          password: 'password123',
+        });
+        const errors = await validate(invalidData);
+        expect(errors.length).toBeGreaterThan(0);
+        expect(errors.some((e) => e.property === 'email')).toBeTruthy();
+      });
+
+      it('should fail validation if password is empty', async () => {
+        const invalidData = createLoginDto({
+          email: 'customer@hotel.com',
+          password: '', // Explicitly setting to empty string
+        });
+        const errors = await validate(invalidData);
+        expect(errors.length).toBeGreaterThan(0);
+        expect(errors.some((e) => e.property === 'password')).toBeTruthy();
+      });
+    });
+
+    it('should fail validation for an invalid email format', async () => {
+      const invalidData = createLoginDto({
+        email: 'invalid-email',
+        password: 'password123',
+      });
+      const errors = await validate(invalidData);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.property === 'email')).toBeTruthy();
+    });
+
+    it('should fail validation if password is shorter than 6 characters', async () => {
+      const invalidData = createLoginDto({
+        email: 'customer@hotel.com',
+        password: '123',
+      });
+      const errors = await validate(invalidData);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.property === 'password')).toBeTruthy();
     });
   });
 });

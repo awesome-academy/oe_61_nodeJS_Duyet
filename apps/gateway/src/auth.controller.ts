@@ -3,7 +3,6 @@ import {
   Controller,
   Inject,
   Post,
-  ValidationPipe,
   UseInterceptors,
   Logger,
   UseGuards,

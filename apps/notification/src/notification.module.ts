@@ -40,7 +40,9 @@ import { I18nService } from 'nestjs-i18n';
           from: `"${i18n.t('auth.SENDER_NAME', { lang: 'vi' })}" <${configService.get('MAIL_FROM')}>`,
         },
         template: {
-          dir: configService.get<string>('MAIL_TEMPLATE_DIR') || path.join(__dirname, 'templates'),
+          dir:
+            configService.get<string>('MAIL_TEMPLATE_DIR') ||
+            path.join(__dirname, 'templates'),
           adapter: new HandlebarsAdapter(),
           options: {
             strict: true,

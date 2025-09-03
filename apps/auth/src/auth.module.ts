@@ -35,6 +35,17 @@ import { BullModule } from '@nestjs/bull';
         },
       }),
     }),
+    BullModule.registerQueueAsync({
+      name: 'emails',
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+        },
+      }),
+    }),
   ],
   controllers: [AuthController],
   providers: [AuthService],
