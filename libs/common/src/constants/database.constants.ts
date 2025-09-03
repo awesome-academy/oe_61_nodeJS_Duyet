@@ -48,3 +48,15 @@ export enum UserStatus {
   INACTIVE = 0,
   ACTIVE = 1,
 }
+
+export interface JwtPayload {
+  jti: string;
+  exp: number;
+  sub: number;
+  email: string;
+}
+
+export interface RpcError {
+  message: string;
+  status: number;
+}
