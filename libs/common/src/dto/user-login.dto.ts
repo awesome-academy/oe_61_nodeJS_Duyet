@@ -2,16 +2,11 @@ import {
   IsEmail,
   IsNotEmpty,
   IsString,
-  MaxLength,
   MinLength,
+  MaxLength,
 } from 'class-validator';
 
-export class RegisterUserDto {
-  @IsString()
-  @IsNotEmpty({ message: 'validation.IS_NOT_EMPTY' })
-  @MaxLength(100, { message: 'validation.MAX_LENGTH' })
-  name: string;
-
+export class UserLoginDto {
   @IsEmail({}, { message: 'validation.IS_EMAIL' })
   @IsNotEmpty({ message: 'validation.IS_NOT_EMPTY' })
   @MaxLength(255, { message: 'validation.MAX_LENGTH' })

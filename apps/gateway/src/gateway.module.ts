@@ -6,8 +6,6 @@ import { AuthController } from './auth.controller';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-store';
 import { BullModule } from '@nestjs/bull';
 import { UserAuthController } from './user-auth.controller';
 import { APP_PIPE } from '@nestjs/core';
