@@ -8,7 +8,15 @@ import { I18nService } from 'nestjs-i18n';
 import { RpcException } from '@nestjs/microservices';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { v4 as uuidv4 } from 'uuid';
-import { JwtPayload } from '../../../libs/common/src/constants/database.constants';
+import {
+  CUSTOMER_ID,
+  JwtPayload,
+} from '../../../libs/common/src/constants/database.constants';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import * as bcrypt from 'bcrypt';
+import { RegisterUserDto } from '@app/common/dto/register-user.dto';
+import { ActiveUserDto } from '@app/common/dto/token-active.dto';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +28,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly i18n: I18nService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    @InjectQueue('emails') private readonly emailQueue: Queue,
   ) {}
 
   async adminLogin(payload: { adminLoginDto: AdminLoginDto; lang: string }) {
@@ -60,8 +69,7 @@ export class AuthService {
         });
       }
 
-      //const isPasswordMatching = await bcrypt.compare(password, admin.password);
-      const isPasswordMatching = password === admin.password;
+      const isPasswordMatching = await bcrypt.compare(password, admin.password);
       if (!isPasswordMatching) {
         this.logger.warn(`Login failed: Invalid password for email: ${email}`);
         throw new RpcException({
@@ -120,7 +128,7 @@ export class AuthService {
     }
   }
 
-  async adminLogout(payload: { token: string; lang: string }) {
+  async logout(payload: { token: string; lang: string }) {
     const { token, lang } = payload;
 
     try {
@@ -159,5 +167,126 @@ export class AuthService {
         status: 500,
       });
     }
+  }
+
+  async userRegister(payload: {
+    registerUserDto: RegisterUserDto;
+    lang: string;
+  }) {
+    const { registerUserDto, lang } = payload;
+    const { email, name, password } = registerUserDto;
+
+    const existingUser = await this.userRepository.findOneBy({ email });
+    if (existingUser) {
+      throw new RpcException({
+        message: this.i18n.t('auth.REGISTER.EMAIL_EXISTS', { lang }),
+        status: 409, // Conflict
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationToken = uuidv4();
+
+    const newUser = this.userRepository.create({
+      name,
+      email,
+      password: hashedPassword,
+      role_id: CUSTOMER_ID, // User has default role
+      status: UserStatus.INACTIVE,
+      verification_token: verificationToken,
+    });
+
+    const savedUser = await this.userRepository.save(newUser);
+
+    try {
+      // IMPORTANT STEP: SUBMIT JOB TO QUEUE
+      await this.emailQueue.add('send-welcome-email', {
+        email: savedUser.email,
+        name: savedUser.name,
+        activationCode: verificationToken,
+        lang: lang,
+      });
+      this.logger.log(
+        `User registered and 'welcome email' job queued for: ${savedUser.email}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to add welcome email job to the queue for user ${savedUser.email}`,
+        (error as Error).stack,
+      );
+    }
+
+    return {
+      status: true,
+      message: this.i18n.t('auth.REGISTER.SUCCESS', { lang }),
+    };
+  }
+
+  async userActive(payload: { ActiveUserDto: ActiveUserDto; lang: string }) {
+    const { ActiveUserDto, lang } = payload;
+    const { verification_token } = ActiveUserDto;
+
+    // Keys for tracking attempts and blocking
+    const attemptKey = `active_attempt_${verification_token}`;
+    const blockKey = `active_block_${verification_token}`;
+
+    // STEP 1: Check if the token is currently blocked
+    const isBlocked = await this.cacheManager.get(blockKey);
+    if (isBlocked) {
+      this.logger.warn(`Blocked activation attempt for token: ${verification_token}`);
+      throw new RpcException({
+        message: this.i18n.t('auth.ACTIVE.RATE_LIMIT_EXCEEDED', { lang }),
+        status: 429, // Too Many Requests
+      });
+    }
+
+    // STEP 2: Find user by verification token
+    const user = await this.userRepository.findOneBy({ verification_token });
+
+    // If token is invalid
+    if (!user) {
+      const currentAttempts = Number((await this.cacheManager.get(attemptKey)) || 0);
+      const newAttempts = currentAttempts + 1;
+      this.logger.debug(`Invalid token attempt. Count: ${newAttempts}`);
+
+      // Increase counter with TTL (e.g., 15 minutes)
+      await this.cacheManager.set(attemptKey, newAttempts, 900);
+
+      // If attempts exceed limit, block the token
+      if (newAttempts >= 5) {
+        this.logger.warn(`Token ${verification_token} is now blocked for 15 minutes.`);
+        await this.cacheManager.set(blockKey, 'true', 900); // Block for 15 minutes
+        await this.cacheManager.del(attemptKey); // Clear attempts
+        throw new RpcException({
+          message: this.i18n.t('auth.ACTIVE.RATE_LIMIT_EXCEEDED', { lang }),
+          status: 429,
+        });
+      }
+
+      throw new RpcException({
+        message: this.i18n.t('auth.ACTIVE.INVALID_CODE', { lang }),
+        status: 400, // Bad Request
+      });
+    }
+
+    // STEP 3: If token is valid
+    if (user.status === UserStatus.ACTIVE) {
+      return {
+        status: true,
+        message: this.i18n.t('auth.ACTIVE.ALREADY_ACTIVE', { lang }),
+      };
+    }
+
+    user.status = UserStatus.ACTIVE;
+    user.verification_token = null;
+    await this.userRepository.save(user);
+
+    // On successful activation, clear attempts from cache
+    await this.cacheManager.del(attemptKey);
+
+    return {
+      status: true,
+      message: this.i18n.t('auth.ACTIVE.SUCCESS', { lang }),
+    };
   }
 }

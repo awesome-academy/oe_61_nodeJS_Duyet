@@ -25,7 +25,7 @@ export class AuthController {
 
   @Post('login')
   @UseInterceptors(RpcErrorInterceptor)
-  login(@Body(new ValidationPipe()) adminLoginDto: AdminLoginDto) {
+  login(@Body() adminLoginDto: AdminLoginDto) {
     const i18n = I18nContext.current();
     const lang = i18n ? i18n.lang : 'vi';
     const payload = { adminLoginDto, lang };

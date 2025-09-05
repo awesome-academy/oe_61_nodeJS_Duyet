@@ -6,8 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { DatabaseModule, Role, User } from '@app/database';
 import { CommonModule } from '@app/common';
-import { redisStore } from 'cache-manager-redis-store';
-import { CacheModule } from '@nestjs/cache-manager';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
@@ -25,15 +24,16 @@ import { CacheModule } from '@nestjs/cache-manager';
         },
       }),
     }),
-    CacheModule.registerAsync({
+    BullModule.registerQueueAsync({
+      name: 'emails',
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        store: await redisStore({
-          url: configService.get<string>('REDIS_URL'),
-        }),
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+        },
       }),
-      isGlobal: true,
     }),
   ],
   controllers: [AuthController],

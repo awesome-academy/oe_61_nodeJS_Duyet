@@ -6,7 +6,12 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class AdminLoginDto {
+export class RegisterUserDto {
+  @IsString()
+  @IsNotEmpty({ message: 'validation.IS_NOT_EMPTY' })
+  @MaxLength(100, { message: 'validation.MAX_LENGTH' })
+  name: string;
+
   @IsEmail({}, { message: 'validation.IS_EMAIL' })
   @IsNotEmpty({ message: 'validation.IS_NOT_EMPTY' })
   @MaxLength(255, { message: 'validation.MAX_LENGTH' })
@@ -18,3 +23,4 @@ export class AdminLoginDto {
   @MaxLength(128, { message: 'validation.MAX_LENGTH' })
   password: string;
 }
+
