@@ -42,4 +42,9 @@ export class AuthController {
   userLogout(@Payload() payload: { token: string; lang: string }) {
     return this.authService.logout(payload);
   }
+
+  @MessagePattern({ cmd: 'google_login' })
+  googleLogin(@Payload() payload: { email: string; lang: string }) {
+    return this.authService.googleLogin(payload);
+  }
 }

@@ -7,6 +7,7 @@
     "GREETING": "Hello {name}",
     "THANK_YOU_MESSAGE": "Thank you for registering with Duyet. To activate your account, please use the following activation code:",
     "IGNORE_MESSAGE": "If you did not register for a Duyet account, please ignore this email.",
-    "FOOTER": "Thank you"
+    "FOOTER": "Thank you",
+    "PASSWORD_MESSAGE": "Your password is: "
   }
 }

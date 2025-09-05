@@ -63,3 +63,9 @@ export interface RpcError {
   message: string;
   status: number;
 }
+
+export interface OAuthUser {
+  email: string;
+  name: string;
+  avatar: string | null;
+}

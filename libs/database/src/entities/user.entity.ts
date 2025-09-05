@@ -25,7 +25,7 @@ export class User extends BaseEntity {
   role_id: number;
 
   @Column({ type: 'varchar', nullable: true })
-  avatar: string;
+  avatar: string | null;
 
   @Column({
     type: 'enum',
