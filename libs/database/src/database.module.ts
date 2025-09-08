@@ -34,6 +34,8 @@ import * as entities from './entities';
         dropSchema: false,
         migrations: [__dirname + '/migrations/*.{ts,js}'],
         migrationsRun: false,
+        // logging: true,
+        // logger: 'advanced-console',
       }),
     }),
   ],
