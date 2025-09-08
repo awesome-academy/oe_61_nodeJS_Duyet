@@ -17,6 +17,7 @@ import { Queue } from 'bull';
 import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from '@app/common/dto/register-user.dto';
 import { ActiveUserDto } from '@app/common/dto/token-active.dto';
+import { UserLoginDto } from '@app/common/dto/user-login.dto';
 
 @Injectable()
 export class AuthService {
@@ -233,7 +234,9 @@ export class AuthService {
     // STEP 1: Check if the token is currently blocked
     const isBlocked = await this.cacheManager.get(blockKey);
     if (isBlocked) {
-      this.logger.warn(`Blocked activation attempt for token: ${verification_token}`);
+      this.logger.warn(
+        `Blocked activation attempt for token: ${verification_token}`,
+      );
       throw new RpcException({
         message: this.i18n.t('auth.ACTIVE.RATE_LIMIT_EXCEEDED', { lang }),
         status: 429, // Too Many Requests
@@ -245,7 +248,9 @@ export class AuthService {
 
     // If token is invalid
     if (!user) {
-      const currentAttempts = Number((await this.cacheManager.get(attemptKey)) || 0);
+      const currentAttempts = Number(
+        (await this.cacheManager.get(attemptKey)) || 0,
+      );
       const newAttempts = currentAttempts + 1;
       this.logger.debug(`Invalid token attempt. Count: ${newAttempts}`);
 
@@ -254,7 +259,9 @@ export class AuthService {
 
       // If attempts exceed limit, block the token
       if (newAttempts >= 5) {
-        this.logger.warn(`Token ${verification_token} is now blocked for 15 minutes.`);
+        this.logger.warn(
+          `Token ${verification_token} is now blocked for 15 minutes.`,
+        );
         await this.cacheManager.set(blockKey, 'true', 900); // Block for 15 minutes
         await this.cacheManager.del(attemptKey); // Clear attempts
         throw new RpcException({
@@ -288,5 +295,104 @@ export class AuthService {
       status: true,
       message: this.i18n.t('auth.ACTIVE.SUCCESS', { lang }),
     };
+  }
+
+  async userLogin(payload: { userLoginDto: UserLoginDto; lang: string }) {
+    const { userLoginDto, lang } = payload;
+    const { email, password } = userLoginDto;
+
+    try {
+      this.logger.log(`User login attempt for email: ${email}`);
+
+      const user = await this.userRepository.findOne({
+        where: { email },
+        relations: ['role'],
+      });
+      // Check if user exists
+      if (!user) {
+        this.logger.warn(`Login failed: User not found for email: ${email}`);
+        throw new RpcException({
+          message: this.i18n.t('auth.INVALID_CREDENTIALS', { lang }),
+          status: 401,
+        });
+      }
+
+      if (!user.role || user.role?.name !== 'customer') {
+        this.logger.warn(
+          `Login failed for user (invalid credentials or not a customer): ${email}`,
+        );
+        throw new RpcException({
+          message: this.i18n.t('auth.INVALID_CREDENTIALS', { lang }),
+          status: 401,
+        });
+      }
+
+      // Check if user is active
+      if (user.status !== UserStatus.ACTIVE) {
+        this.logger.warn(`Login failed: User ${email} is inactive`);
+        throw new RpcException({
+          message: this.i18n.t('auth.ACCOUNT_INACTIVE', { lang }),
+          status: 401,
+        });
+      }
+
+      const isPasswordMatching = await bcrypt.compare(password, user.password);
+      if (!isPasswordMatching) {
+        this.logger.warn(`Login failed: Invalid password for email: ${email}`);
+        throw new RpcException({
+          message: this.i18n.t('auth.INVALID_CREDENTIALS', { lang }),
+          status: 401,
+        });
+      }
+
+      const jwtPayload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role.name,
+        name: user.name,
+        jti: uuidv4(),
+      };
+      const accessToken = this.jwtService.sign(jwtPayload);
+
+      this.logger.log(`User login successful for email: ${email}`);
+      return {
+        status: true,
+        message: this.i18n.t('auth.LOGIN_SUCCESS', { lang }),
+        data: {
+          accessToken,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role.name,
+            avatar: user.avatar,
+          },
+        },
+      };
+    } catch (error) {
+      if (error instanceof RpcException) {
+        throw error;
+      }
+      this.logger.error(
+        `Login error for email: ${email}`,
+        (error as Error).stack,
+      );
+
+      let errorMessage: string;
+      try {
+        errorMessage = this.i18n.t('auth.LOGIN_ERROR', { lang });
+      } catch (i18nError) {
+        this.logger.warn(
+          `Could not translate 'auth.LOGIN_ERROR' for lang '${lang}'. Falling back to default message.`,
+          (i18nError as Error).message,
+        );
+        errorMessage = this.i18n.t('auth.FALLBACK_ERROR', { lang: 'vi' });
+      }
+
+      throw new RpcException({
+        message: errorMessage,
+        status: 500,
+      });
+    }
   }
 }

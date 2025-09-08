@@ -55,6 +55,8 @@ export interface JwtPayload {
   exp: number;
   sub: number;
   email: string;
+  role: string;
+  name: string;
 }
 
 export interface RpcError {
