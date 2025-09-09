@@ -9,7 +9,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { JwtAuthGuard, RpcErrorInterceptor } from '@app/common';
+import {
+  ForgotPasswordDto,
+  JwtAuthGuard,
+  ResetPasswordDto,
+  RpcErrorInterceptor,
+  VerifyTokenDto,
+} from '@app/common';
 import { I18nContext } from 'nestjs-i18n';
 import { RegisterUserDto } from '@app/common/dto/register-user.dto';
 import { ActiveUserDto } from '@app/common/dto/token-active.dto';
@@ -72,5 +78,32 @@ export class UserAuthController {
     const payload = { email: user.email, lang };
 
     return this.authClient.send({ cmd: 'google_login' }, payload);
+  }
+
+  @Post('forgot-password')
+  forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    const lang = I18nContext.current()?.lang || 'vi';
+    return this.authClient.send(
+      { cmd: 'forgot_password' },
+      { forgotPasswordDto, lang },
+    );
+  }
+
+  @Post('verify-token')
+  verifyToken(@Body() verifyTokenDto: VerifyTokenDto) {
+    const lang = I18nContext.current()?.lang || 'vi';
+    return this.authClient.send(
+      { cmd: 'verify_reset_token' },
+      { verifyTokenDto, lang },
+    );
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    const lang = I18nContext.current()?.lang || 'vi';
+    return this.authClient.send(
+      { cmd: 'reset_password' },
+      { resetPasswordDto, lang },
+    );
   }
 }

@@ -6,3 +6,7 @@ export * from './filters/http-exception.filter';
 export * from './interceptors/rpc-error.interceptor';
 export * from './guards/jwt-auth.guard';
 export * from './decorators/roles.decorator';
+export * from './dto/forgot-password.dto';
+export * from './dto/reset-password.dto';
+export * from './dto/register-user.dto';
+export * from './dto/verify-token.dto';

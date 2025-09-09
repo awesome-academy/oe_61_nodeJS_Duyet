@@ -1,13 +1,15 @@
 {
-  "WELCOME_SUBJECT": "Chào mừng bạn, {name}!",
+  "WELCOME_SUBJECT": "Khách sạn DT xin chào bạn, {name}!",
   "SENDER_NAME": "Khách sạn DT",
   "TEMPLATE": {
     "TITLE": "Email Kích hoạt tài khoản Duyệt",
-    "HEADER": "Chào mừng",
+    "HEADER": "Khách sạn DT xin chào",
     "GREETING": "Xin chào {name}",
     "THANK_YOU_MESSAGE": "Cảm ơn bạn đã đăng ký với Duyệt. Để kích hoạt tài khoản, vui lòng sử dụng mã kích hoạt sau:",
     "IGNORE_MESSAGE": "Nếu bạn không đăng ký tài khoản Duyệt, vui lòng bỏ qua email này.",
     "FOOTER": "Cảm ơn bạn",
-    "PASSWORD_MESSAGE": "Mật khẩu của bạn là: "
+    "PASSWORD_MESSAGE": "Mật khẩu của bạn là: ",
+    "PASSWORD_NOTE": "Vui lòng đổi mật khẩu sau khi đăng nhập lần đầu.",
+    "FORGOT_PASSWORD_MESSAGE": "Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản của mình. Đây là mã xác nhận để đổi mật khẩu. Nếu bạn không yêu cầu, vui lòng bỏ qua email này."
   }
 }

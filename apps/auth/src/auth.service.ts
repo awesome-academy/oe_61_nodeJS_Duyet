@@ -1,9 +1,15 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@app/database';
-import { AdminLoginDto, UserStatus } from '@app/common';
+import {
+  AdminLoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  UserStatus,
+  VerifyTokenDto,
+} from '@app/common';
 import { I18nService } from 'nestjs-i18n';
 import { RpcException } from '@nestjs/microservices';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
@@ -11,6 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   CUSTOMER_ID,
   JwtPayload,
+  TOKEN_EXPIRES_HOURS,
 } from '../../../libs/common/src/constants/database.constants';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
@@ -291,7 +298,7 @@ export class AuthService {
 
     // On successful activation, clear attempts from cache
     await this.cacheManager.del(attemptKey);
-
+    await this.cacheManager.del(blockKey);
     return {
       status: true,
       message: this.i18n.t('auth.ACTIVE.SUCCESS', { lang }),
@@ -480,6 +487,119 @@ export class AuthService {
           avatar: user.avatar,
         },
       },
+    };
+  }
+
+  async forgotPassword(payload: {
+    forgotPasswordDto: ForgotPasswordDto;
+    lang: string;
+  }) {
+    const { forgotPasswordDto, lang } = payload;
+    const { email } = forgotPasswordDto;
+    const user = await this.userRepository.findOneBy({ email });
+
+    if (!user) {
+      this.logger.warn(
+        `Forgot password attempt for non-existent email: ${email}`,
+      );
+      throw new RpcException({
+        message: this.i18n.t('auth.EMAIL_NOT_FOUND', { lang }),
+        status: 404,
+      });
+    }
+
+    const resetToken = uuidv4();
+    const expires = new Date();
+    expires.setHours(expires.getHours() + TOKEN_EXPIRES_HOURS); // Token expires in 1 hour.
+
+    user.password_reset_token = resetToken;
+    user.password_reset_expires = expires; // Assign to the new column.
+    await this.userRepository.save(user);
+
+    // Submit a job to the queue to send the email.
+    try {
+      await this.emailQueue.add('send-reset-password-email', {
+        email: user.email,
+        name: user.name,
+        resetToken: resetToken,
+        lang: lang,
+      });
+      this.logger.log(
+        `'send-reset-password-email' job queued for: ${user.email}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to add reset password job to the queue for user ${user.email}`,
+        (error as Error).stack,
+      );
+    }
+
+    this.logger.log(`Forgot password request processed for email: ${email}`);
+    return {
+      status: true,
+      message: this.i18n.t('auth.FORGOT_PASSWORD.SUCCESS', { lang }),
+    };
+  }
+
+  // NEW METHOD: VERIFY TOKEN
+  async verifyResetToken(payload: {
+    verifyTokenDto: VerifyTokenDto;
+    lang: string;
+  }) {
+    const { verifyTokenDto, lang } = payload;
+    const { token } = verifyTokenDto;
+
+    const user = await this.userRepository.findOne({
+      where: {
+        password_reset_token: token,
+        password_reset_expires: MoreThan(new Date()), // Check if the token is not expired.
+      },
+    });
+
+    if (!user) {
+      throw new RpcException({
+        message: this.i18n.t('auth.RESET_PASSWORD.INVALID_TOKEN', { lang }),
+        status: 400,
+      });
+    }
+
+    return {
+      status: true,
+      message: this.i18n.t('auth.VERIFY_TOKEN.SUCCESS', { lang }),
+    };
+  }
+
+  // NEW METHOD: RESET PASSWORD
+  async resetPassword(payload: {
+    resetPasswordDto: ResetPasswordDto;
+    lang: string;
+  }) {
+    const { resetPasswordDto, lang } = payload;
+    const { token, password } = resetPasswordDto;
+
+    // Re-validate the token one last time for security.
+    const user = await this.userRepository.findOne({
+      where: {
+        password_reset_token: token,
+        password_reset_expires: MoreThan(new Date()),
+      },
+    });
+    if (!user) {
+      throw new RpcException({
+        message: this.i18n.t('auth.RESET_PASSWORD.INVALID_TOKEN', { lang }),
+        status: 400,
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
+    user.password_reset_token = null;
+    user.password_reset_expires = null; // Also clear the expiry date.
+    await this.userRepository.save(user);
+
+    return {
+      status: true,
+      message: this.i18n.t('auth.RESET_PASSWORD.SUCCESS', { lang }),
     };
   }
 }

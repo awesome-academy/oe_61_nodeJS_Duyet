@@ -40,6 +40,9 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   password_reset_token: string | null;
 
+  @Column({ type: 'datetime', nullable: true })
+  password_reset_expires: Date | null;
+
   @ManyToOne(() => Role, (role) => role.users)
   @JoinColumn({ name: 'role_id' })
   role: Role;

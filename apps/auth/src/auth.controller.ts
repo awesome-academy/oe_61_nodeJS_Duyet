@@ -1,7 +1,12 @@
 import { Controller } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { AdminLoginDto } from '@app/common';
+import {
+  AdminLoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  VerifyTokenDto,
+} from '@app/common';
 import { RegisterUserDto } from '@app/common/dto/register-user.dto';
 import { ActiveUserDto } from '@app/common/dto/token-active.dto';
 import { UserLoginDto } from '@app/common/dto/user-login.dto';
@@ -46,5 +51,25 @@ export class AuthController {
   @MessagePattern({ cmd: 'google_login' })
   googleLogin(@Payload() payload: { email: string; lang: string }) {
     return this.authService.googleLogin(payload);
+  }
+  @MessagePattern({ cmd: 'forgot_password' })
+  forgotPassword(
+    @Payload() payload: { forgotPasswordDto: ForgotPasswordDto; lang: string },
+  ) {
+    return this.authService.forgotPassword(payload);
+  }
+
+  @MessagePattern({ cmd: 'verify_reset_token' })
+  verifyResetToken(
+    @Payload() payload: { verifyTokenDto: VerifyTokenDto; lang: string },
+  ) {
+    return this.authService.verifyResetToken(payload);
+  }
+
+  @MessagePattern({ cmd: 'reset_password' })
+  resetPassword(
+    @Payload() payload: { resetPasswordDto: ResetPasswordDto; lang: string },
+  ) {
+    return this.authService.resetPassword(payload);
   }
 }
