@@ -18,6 +18,7 @@ import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from '@app/common/dto/register-user.dto';
 import { ActiveUserDto } from '@app/common/dto/token-active.dto';
 import { UserLoginDto } from '@app/common/dto/user-login.dto';
+import { OAuthUserDto } from '@app/common/dto/oauth-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -394,5 +395,91 @@ export class AuthService {
         status: 500,
       });
     }
+  }
+
+  async validateOAuthUser(payload: {
+    googleUser: OAuthUserDto;
+    lang: string;
+  }): Promise<User> {
+    const { googleUser, lang } = payload;
+    const user = await this.userRepository.findOneBy({
+      email: googleUser.email,
+    });
+    const password = uuidv4();
+    if (user) return user;
+    const newUser = this.userRepository.create({
+      email: googleUser.email,
+      name: googleUser.name,
+      avatar: googleUser.avatar,
+      password: await bcrypt.hash(password, 10),
+      role_id: CUSTOMER_ID, // Default role for OAuth users
+      status: UserStatus.ACTIVE, // OAuth users are active by default
+    });
+
+    try {
+      // IMPORTANT STEP: SUBMIT JOB TO QUEUE
+      await this.emailQueue.add('send-pass-email', {
+        email: newUser.email,
+        name: newUser.name,
+        password: password,
+        lang: lang,
+      });
+      this.logger.log(
+        `User registered and 'welcome email' job queued for: ${newUser.email}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to add welcome email job to the queue for user ${newUser.email}`,
+        (error as Error).stack,
+      );
+    }
+
+    // Save the new user to the database and return it
+    return this.userRepository.save(newUser);
+  }
+
+  async googleLogin(payload: { email: string; lang: string }) {
+    const { email, lang } = payload;
+
+    const user = await this.userRepository.findOne({
+      where: { email },
+      relations: ['role'],
+    });
+
+    if (!user) {
+      throw new RpcException({
+        message: this.i18n.t('auth.USER_NOT_FOUND', { lang }),
+        status: 404,
+      });
+    } else if (user.status !== UserStatus.ACTIVE) {
+      throw new RpcException({
+        message: this.i18n.t('auth.ACCOUNT_INACTIVE', { lang }),
+        status: 403,
+      });
+    }
+
+    const jwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role.name,
+      name: user.name,
+      jti: uuidv4(),
+    };
+    const accessToken = this.jwtService.sign(jwtPayload);
+
+    return {
+      status: true,
+      message: this.i18n.t('auth.LOGIN_SUCCESS', { lang }),
+      data: {
+        accessToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role.name,
+          avatar: user.avatar,
+        },
+      },
+    };
   }
 }

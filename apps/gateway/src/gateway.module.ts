@@ -10,11 +10,15 @@ import { BullModule } from '@nestjs/bull';
 import { UserAuthController } from './user-auth.controller';
 import { APP_PIPE } from '@nestjs/core';
 import { I18nValidationPipe } from '@app/common/pipes/i18n-validation.pipe';
+import googleOauthConfig from 'libs/config/google-oauth.config';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { AuthModule } from 'apps/auth/src/auth.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: './.env' }),
     CommonModule,
+    AuthModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -42,6 +46,7 @@ import { I18nValidationPipe } from '@app/common/pipes/i18n-validation.pipe';
         port: 6379,
       },
     }),
+    ConfigModule.forFeature(googleOauthConfig),
   ],
   controllers: [GatewayController, AuthController, UserAuthController],
   providers: [
@@ -52,6 +57,7 @@ import { I18nValidationPipe } from '@app/common/pipes/i18n-validation.pipe';
       provide: APP_PIPE,
       useClass: I18nValidationPipe,
     },
+    GoogleStrategy,
   ],
 })
 export class GatewayModule {}

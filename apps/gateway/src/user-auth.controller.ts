@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Inject,
   Post,
   Req,
@@ -14,7 +15,9 @@ import { RegisterUserDto } from '@app/common/dto/register-user.dto';
 import { ActiveUserDto } from '@app/common/dto/token-active.dto';
 import { UserLoginDto } from '@app/common/dto/user-login.dto';
 import { timeout } from 'rxjs';
+import { GoogleAuthGuard } from './google-auth/google-auth.guard';
 import { Request } from 'express';
+import { User } from '@app/database';
 
 @Controller('auth')
 @UseInterceptors(RpcErrorInterceptor)
@@ -55,5 +58,19 @@ export class UserAuthController {
     const token = req.headers.authorization?.split(' ')[1];
     const lang = I18nContext.current()?.lang || 'vi';
     return this.authClient.send({ cmd: 'user_logout' }, { token, lang });
+  }
+
+  @Get('google/login')
+  @UseGuards(GoogleAuthGuard)
+  googleLogin() {}
+
+  @UseGuards(GoogleAuthGuard)
+  @Get('google/callback')
+  googleCallback(@Req() req: Request) {
+    const lang = I18nContext.current()?.lang || 'vi';
+    const user = req.user as User & { email: string };
+    const payload = { email: user.email, lang };
+
+    return this.authClient.send({ cmd: 'google_login' }, payload);
   }
 }
