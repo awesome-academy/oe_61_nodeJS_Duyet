@@ -13,6 +13,7 @@ import { I18nValidationPipe } from '@app/common/pipes/i18n-validation.pipe';
 import googleOauthConfig from 'libs/config/google-oauth.config';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { AuthModule } from 'apps/auth/src/auth.module';
+import { RoomController } from './room.controller';
 
 @Module({
   imports: [
@@ -39,6 +40,14 @@ import { AuthModule } from 'apps/auth/src/auth.module';
           port: 3001,
         },
       },
+      {
+        name: 'ROOM_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 3002,
+        },
+      },
     ]),
     BullModule.forRoot({
       redis: {
@@ -48,7 +57,12 @@ import { AuthModule } from 'apps/auth/src/auth.module';
     }),
     ConfigModule.forFeature(googleOauthConfig),
   ],
-  controllers: [GatewayController, AuthController, UserAuthController],
+  controllers: [
+    GatewayController,
+    AuthController,
+    UserAuthController,
+    RoomController,
+  ],
   providers: [
     GatewayService,
     RpcErrorInterceptor,

@@ -74,6 +74,15 @@
           }
         ]
       }
+    },
+    "room": {
+      "type": "application",
+      "root": "apps/room",
+      "entryFile": "main",
+      "sourceRoot": "apps/room/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/room/tsconfig.app.json"
+      }
     }
   }
 }
