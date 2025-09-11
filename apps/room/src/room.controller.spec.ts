@@ -4,11 +4,16 @@ import { RoomController } from './room.controller';
 import { RoomService } from './room.service';
 import { RpcException } from '@nestjs/microservices';
 import { ListRoomDto } from '@app/common/dto/list-room.dto';
+import { CreateRoomDto, UpdateRoomDto } from '@app/common';
+import { Room } from '@app/database';
 
-// 1. Create a mock for the RoomService
-// This helps to isolate and test only the RoomController's logic
 const mockRoomService = {
   listRooms: jest.fn(),
+  createRoom: jest.fn(),
+  updateRoomInfo: jest.fn(),
+  updateRoomImage: jest.fn(),
+  deleteRoom: jest.fn(),
+  getRoomById: jest.fn(),
 };
 
 describe('RoomController', () => {
@@ -21,7 +26,7 @@ describe('RoomController', () => {
       providers: [
         {
           provide: RoomService,
-          useValue: mockRoomService, // Use the mock service
+          useValue: mockRoomService,
         },
       ],
     }).compile();
@@ -30,7 +35,6 @@ describe('RoomController', () => {
     service = module.get<RoomService>(RoomService);
   });
 
-  // Clean up mocks after each test to ensure test isolation
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -39,88 +43,139 @@ describe('RoomController', () => {
     expect(controller).toBeDefined();
   });
 
-  // --- Test suite for the 'listRooms' handler ---
+  // ================================
+  // listRooms
+  // ================================
   describe('listRooms', () => {
-    // --- Scenario 1: Default parameters ---
-    it('should call the service with default pagination when no params are provided', async () => {
-      const defaultDto: ListRoomDto = { page: 1, limit: 10 };
-      const successResponse = { data: [], total: 0, page: 1, last_page: 0 };
-      mockRoomService.listRooms.mockResolvedValue(successResponse);
+    it('should call service.listRooms with dto', async () => {
+      const dto: ListRoomDto = { page: 1, limit: 10 };
+      const result = { data: [], total: 0, page: 1, last_page: 0 };
+      mockRoomService.listRooms.mockResolvedValue(result);
 
-      await controller.listRooms(defaultDto);
-
-      // Assert: Check if the service was called with the correct default DTO
-      expect(service.listRooms).toHaveBeenCalledWith(defaultDto);
+      const res = await controller.listRooms(dto);
+      expect(res).toEqual(result);
+      expect(service.listRooms).toHaveBeenCalledWith(dto);
     });
 
-    // --- Scenario 2: With pagination parameters ---
-    it('should call the service with provided pagination parameters', async () => {
-      const paginationDto: ListRoomDto = { page: 3, limit: 25 };
-      mockRoomService.listRooms.mockResolvedValue({}); // Response doesn't matter for this check
+    it('should throw RpcException when service fails', async () => {
+      const dto: ListRoomDto = { page: 1, limit: 10 };
+      const error = new RpcException('DB error');
+      mockRoomService.listRooms.mockRejectedValue(error);
 
-      await controller.listRooms(paginationDto);
-
-      // Assert: Check if the service was called with the exact pagination DTO
-      expect(service.listRooms).toHaveBeenCalledWith(paginationDto);
+      await expect(controller.listRooms(dto)).rejects.toThrow(error);
     });
+  });
 
-    // --- Scenario 3: With search and filter parameters ---
-    it('should call the service with search and filter parameters', async () => {
-      const filterDto: ListRoomDto = {
-        search: 'beach view',
-        bed_number: 2,
-        air_conditioned: true,
+  // ================================
+  // createRoom
+  // ================================
+  describe('createRoom', () => {
+    it('should call service.createRoom with payload', async () => {
+      const payload = {
+        createRoomDto: { room_number: '101' } as CreateRoomDto,
+        lang: 'en',
+        imageUrl: 'http://image',
       };
-      mockRoomService.listRooms.mockResolvedValue({});
+      const result = { id: 1, ...payload.createRoomDto };
+      mockRoomService.createRoom.mockResolvedValue(result);
 
-      await controller.listRooms(filterDto);
-
-      // Assert: Check if the service was called with the exact filter DTO
-      expect(service.listRooms).toHaveBeenCalledWith(filterDto);
+      const res = await controller.createRoom(payload);
+      expect(res).toEqual(result);
+      expect(service.createRoom).toHaveBeenCalledWith(payload);
     });
 
-    // --- Scenario 4: With a combination of all parameters ---
-    it('should call the service with a full combination of parameters', async () => {
-      const fullDto: ListRoomDto = {
-        page: 2,
-        limit: 15,
-        search: 'deluxe',
-        bed_number: 1,
-        air_conditioned: false,
+    it('should propagate error from service', async () => {
+      const payload = {
+        createRoomDto: { room_number: '101' } as CreateRoomDto,
+        lang: 'en',
+        imageUrl: null,
       };
-      mockRoomService.listRooms.mockResolvedValue({});
+      const error = new RpcException('Create failed');
+      mockRoomService.createRoom.mockRejectedValue(error);
 
-      await controller.listRooms(fullDto);
-
-      // Assert: Check if the service was called with the complete DTO
-      expect(service.listRooms).toHaveBeenCalledWith(fullDto);
+      await expect(controller.createRoom(payload)).rejects.toThrow(error);
     });
+  });
 
-    // --- Scenario 5: Successful operation with response check ---
-    it('should return the result from the service on a successful call', async () => {
-      const listRoomDto: ListRoomDto = { page: 1, limit: 10 };
-      const successResponse = {
-        data: [{ id: 1, room_number: '101' }],
-        total: 1,
-        page: 1,
-        last_page: 1,
+  // ================================
+  // handleUpdateRoomInfo
+  // ================================
+  describe('handleUpdateRoomInfo', () => {
+    it('should call service.updateRoomInfo with id, dto and lang', async () => {
+      const payload = {
+        id: 1,
+        updateRoomDto: { room_number: '202' } as UpdateRoomDto,
+        lang: 'en',
       };
-      mockRoomService.listRooms.mockResolvedValue(successResponse);
+      const result = { id: 1, ...payload.updateRoomDto };
+      mockRoomService.updateRoomInfo.mockResolvedValue(result);
 
-      const result = await controller.listRooms(listRoomDto);
-
-      // Assert: Did the controller return the correct result from the service?
-      expect(result).toEqual(successResponse);
+      const res = await controller.handleUpdateRoomInfo(payload);
+      expect(res).toEqual(result);
+      expect(service.updateRoomInfo).toHaveBeenCalledWith(
+        payload.id,
+        payload.updateRoomDto,
+        payload.lang,
+      );
     });
 
-    // --- Scenario 6: Service throws an error ---
-    it('should propagate RpcException when the service throws an error', async () => {
-      const listRoomDto: ListRoomDto = { page: 1, limit: 10 };
-      const rpcError = new RpcException('Database connection failed');
-      mockRoomService.listRooms.mockRejectedValue(rpcError);
+    it('should propagate error from service', async () => {
+      const payload = {
+        id: 1,
+        updateRoomDto: {} as UpdateRoomDto,
+        lang: 'en',
+      };
+      const error = new RpcException('Update failed');
+      void mockRoomService.updateRoomInfo.mockRejectedValue(error);
 
-      // Act & Assert: Expect that calling the method will throw the exact error from the service
-      await expect(controller.listRooms(listRoomDto)).rejects.toThrow(rpcError);
+      await expect(controller.handleUpdateRoomInfo(payload)).rejects.toThrow(
+        error,
+      );
+    });
+  });
+
+  // ================================
+  // handleDeleteRoom
+  // ================================
+  describe('handleDeleteRoom', () => {
+    it('should call service.deleteRoom with id and lang', async () => {
+      const payload = { id: 1, lang: 'en' };
+      const result = { success: true };
+      mockRoomService.deleteRoom.mockResolvedValue(result);
+
+      const res = await controller.handleDeleteRoom(payload);
+      expect(res).toEqual(result);
+      expect(service.deleteRoom).toHaveBeenCalledWith(payload.id, payload.lang);
+    });
+
+    it('should propagate error from service', async () => {
+      const payload = { id: 1, lang: 'en' };
+      const error = new RpcException('Delete failed');
+      mockRoomService.deleteRoom.mockRejectedValue(error);
+
+      await expect(controller.handleDeleteRoom(payload)).rejects.toThrow(error);
+    });
+  });
+
+  describe('getRoomById', () => {
+    const payload = { id: 1 };
+
+    it('should call service.getRoomById with the id and return the found room', async () => {
+      const mockRoom = { id: 1, room_number: '101' } as Room;
+      mockRoomService.getRoomById.mockResolvedValue(mockRoom);
+
+      const result = await controller.getRoomById(payload);
+
+      expect(service.getRoomById).toHaveBeenCalledWith(payload.id);
+      expect(result).toEqual(mockRoom);
+    });
+
+    it('should propagate RpcException when the service throws a not found error', async () => {
+      const error = new RpcException('Room not found');
+      mockRoomService.getRoomById.mockRejectedValue(error);
+
+      await expect(controller.getRoomById(payload)).rejects.toThrow(error);
+      expect(service.getRoomById).toHaveBeenCalledWith(payload.id);
     });
   });
 });

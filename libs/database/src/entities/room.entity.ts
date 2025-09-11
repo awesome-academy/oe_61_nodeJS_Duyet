@@ -37,7 +37,7 @@ export class Room extends BaseEntity {
   price: number;
 
   @Column({ type: 'varchar', nullable: true })
-  image: string;
+  image: string | null;
 
   @Column({
     type: 'enum',

@@ -74,7 +74,7 @@ describe('UserService', () => {
       await service.listUsers(dto);
 
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        '(user.name LIKE :search OR user.email LIKE :search)',
+        "(LOWER(user.name) LIKE LOWER(:search) ESCAPE '\\' OR LOWER(user.email) LIKE LOWER(:search) ESCAPE '\\')",
         { search: `%John Doe%` },
       );
     });
@@ -100,9 +100,9 @@ describe('UserService', () => {
       const result = await service.listUsers(dto);
 
       expect(result.data).toEqual(mockUsers);
-      expect(result.total).toBe(total);
-      expect(result.page).toBe(2);
-      expect(result.last_page).toBe(4); // Math.ceil(50 / 15)
+      expect(result.meta.total).toBe(total);
+      expect(result.meta.page).toBe(2);
+      expect(result.meta.last_page).toBe(4); // Math.ceil(50 / 15)
     });
 
     // --- Scenario 5: Handle errors from repository ---

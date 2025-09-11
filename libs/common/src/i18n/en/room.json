@@ -1,0 +1,10 @@
+{
+  "EXISTS": "The room already exists",
+  "CREATED_SUCCESS": "Create room successfully, image is uploading in background",
+  "UPDATED_SUCCESS": "Update room successfully, image is uploading in background",
+  "DELETED_SUCCESS": "Delete room successfully",
+  "NOT_FOUND": "Room not found",
+  "CREATE_FAILED": "Failed to create room",
+  "UPDATE_FAILED": "Failed to update room",
+  "DELETE_FAILED": "Failed to delete room"
+}

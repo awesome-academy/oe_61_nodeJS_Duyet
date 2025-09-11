@@ -3,5 +3,10 @@
   "IS_EMAIL": "{property} must be a valid email address.",
   "MIN_LENGTH": "{property} must be longer than or equal to {constraints.0} characters.",
   "MAX_LENGTH": "{property} must be shorter than or equal to {constraints.0} characters.",
-  "IS_UUID": "{property} must be a valid UUID."
+  "IS_UUID": "{property} must be a valid UUID.",
+  "IS_STRING": "{property} must be a string.",
+  "IS_INT": "{property} must be an integer.",
+  "IS_BOOLEAN": "{property} must be a boolean value (true/false).",
+  "IS_NUMBER": "{property} must be a number.",
+  "MIN": "{property} should not be less than {constraints.0}."
 }
