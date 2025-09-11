@@ -2,7 +2,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { AdminLoginDto } from '@app/common';
+import {
+  AdminLoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  VerifyTokenDto,
+} from '@app/common';
 import { RpcException } from '@nestjs/microservices';
 import { ActiveUserDto } from '@app/common/dto/token-active.dto';
 import { RegisterUserDto } from '@app/common/dto/register-user.dto';
@@ -16,6 +21,11 @@ const mockAuthService = {
   userRegister: jest.fn(),
   userActive: jest.fn(),
   userLogin: jest.fn(),
+  userLogout: jest.fn(),
+  googleLogin: jest.fn(),
+  forgotPassword: jest.fn(),
+  verifyResetToken: jest.fn(),
+  resetPassword: jest.fn(),
 };
 
 describe('AuthController', () => {
@@ -496,6 +506,163 @@ describe('AuthController', () => {
       const errors = await validate(invalidData);
       expect(errors.length).toBeGreaterThan(0);
       expect(errors.some((e) => e.property === 'password')).toBeTruthy();
+    });
+  });
+
+  // Test suite for 'userLogout' ---
+  describe('userLogout', () => {
+    const logoutPayload: { token: string; lang: string } = {
+      token: 'some-uuid',
+      lang: 'vi',
+    };
+
+    it('should call authService.logout and return success', async () => {
+      const successResponse = {
+        status: true,
+        message: 'Đăng xuất thành công.',
+      };
+      mockAuthService.logout.mockResolvedValue(successResponse);
+
+      const result = await controller.userLogout(logoutPayload);
+
+      expect(service.logout).toHaveBeenCalledWith(logoutPayload);
+      expect(result).toEqual(successResponse);
+    });
+
+    // ADDED: Test case for failure
+    it('should propagate RpcException if logout fails', async () => {
+      const rpcError = new RpcException({
+        message: 'Đăng xuất thất bại',
+        status: 500,
+      });
+      mockAuthService.logout.mockRejectedValue(rpcError);
+
+      await expect(controller.userLogout(logoutPayload)).rejects.toThrow(
+        rpcError,
+      );
+    });
+  });
+
+  // Test suite for 'googleLogin' ---
+  describe('googleLogin', () => {
+    const googleLoginPayload = {
+      email: 'google@user.com',
+      lang: 'vi',
+    };
+
+    it('should call authService.googleLogin and return success', async () => {
+      const successResponse = {
+        status: true,
+        data: { accessToken: 'googleAccessToken' },
+      };
+      mockAuthService.googleLogin.mockResolvedValue(successResponse);
+      const result = await controller.googleLogin(googleLoginPayload);
+      expect(service.googleLogin).toHaveBeenCalledWith(googleLoginPayload);
+      expect(result).toEqual(successResponse);
+    });
+
+    // ADDED: Test case for failure
+    it('should propagate RpcException if googleLogin fails', async () => {
+      const rpcError = new RpcException({
+        message: 'Account is inactive',
+        status: 403,
+      });
+      mockAuthService.googleLogin.mockRejectedValue(rpcError);
+      await expect(controller.googleLogin(googleLoginPayload)).rejects.toThrow(
+        rpcError,
+      );
+    });
+  });
+
+  // --- Updated: Test suite for 'forgotPassword' ---
+  describe('forgotPassword', () => {
+    const forgotPasswordPayload = {
+      forgotPasswordDto: { email: 'test@example.com' } as ForgotPasswordDto,
+      lang: 'vi',
+    };
+
+    it('should call authService.forgotPassword and return success', async () => {
+      const successResponse = { status: true, message: 'Yêu cầu đã được gửi.' };
+      mockAuthService.forgotPassword.mockResolvedValue(successResponse);
+      const result = await controller.forgotPassword(forgotPasswordPayload);
+      expect(service.forgotPassword).toHaveBeenCalledWith(
+        forgotPasswordPayload,
+      );
+      expect(result).toEqual(successResponse);
+    });
+
+    // ADDED: Test case for failure
+    it('should propagate RpcException if email is not found', async () => {
+      const rpcError = new RpcException({
+        message: 'Email không tồn tại trong hệ thống.',
+        status: 404,
+      });
+      mockAuthService.forgotPassword.mockRejectedValue(rpcError);
+      await expect(
+        controller.forgotPassword(forgotPasswordPayload),
+      ).rejects.toThrow(rpcError);
+    });
+  });
+
+  // --- Updated: Test suite for 'verifyResetToken' ---
+  describe('verifyResetToken', () => {
+    const verifyTokenPayload = {
+      verifyTokenDto: { token: 'valid-reset-token' } as VerifyTokenDto,
+      lang: 'vi',
+    };
+
+    it('should call authService.verifyResetToken and return success', async () => {
+      const successResponse = { status: true, message: 'Token hợp lệ.' };
+      mockAuthService.verifyResetToken.mockResolvedValue(successResponse);
+      const result = await controller.verifyResetToken(verifyTokenPayload);
+      expect(service.verifyResetToken).toHaveBeenCalledWith(verifyTokenPayload);
+      expect(result).toEqual(successResponse);
+    });
+
+    // ADDED: Test case for failure
+    it('should propagate RpcException if token is invalid', async () => {
+      const rpcError = new RpcException({
+        message: 'Mã đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.',
+        status: 400,
+      });
+      mockAuthService.verifyResetToken.mockRejectedValue(rpcError);
+      await expect(
+        controller.verifyResetToken(verifyTokenPayload),
+      ).rejects.toThrow(rpcError);
+    });
+  });
+
+  // --- Updated: Test suite for 'resetPassword' ---
+  describe('resetPassword', () => {
+    const resetPasswordPayload = {
+      resetPasswordDto: {
+        token: 'valid-reset-token',
+        password: 'newPassword123',
+      } as ResetPasswordDto,
+      lang: 'vi',
+    };
+
+    it('should call authService.resetPassword and return success', async () => {
+      const successResponse = {
+        status: true,
+        message: 'Mật khẩu đã được đặt lại thành công.',
+      };
+      mockAuthService.resetPassword.mockResolvedValue(successResponse);
+      const result = await controller.resetPassword(resetPasswordPayload);
+      expect(service.resetPassword).toHaveBeenCalledWith(resetPasswordPayload);
+      expect(result).toEqual(successResponse);
+    });
+
+    // ADDED: Test case for failure
+    it('should propagate RpcException if token is invalid', async () => {
+      const rpcError = new RpcException({
+        message: 'Mã đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.',
+        status: 400,
+      });
+      mockAuthService.resetPassword.mockRejectedValue(rpcError);
+      await expect(
+        controller.resetPassword(resetPasswordPayload),
+      ).rejects.toThrow(rpcError);
     });
   });
 });

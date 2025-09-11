@@ -3,6 +3,7 @@ export const DECIMAL_SCALE = 2;
 export const CUSTOMER_ID = 3;
 export const PAGE = 1;
 export const LIMIT = 10;
+export const TOKEN_EXPIRES_HOURS = 1;
 
 export enum BookingStatus {
   CANCELED = 0,
