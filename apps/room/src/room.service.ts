@@ -1,15 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Room } from '@app/database';
 import { Repository } from 'typeorm';
 import { ListRoomDto } from '@app/common/dto/list-room.dto';
-import { LIMIT, PAGE } from '@app/common';
+import { CreateRoomDto, LIMIT, PAGE, UpdateRoomDto } from '@app/common';
+import { RpcException } from '@nestjs/microservices';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class RoomService {
+  private readonly logger = new Logger(RoomService.name);
   constructor(
     @InjectRepository(Room)
     private readonly roomRepository: Repository<Room>,
+    private readonly i18n: I18nService,
   ) {}
 
   async listRooms(listRoomDto: ListRoomDto) {
@@ -50,5 +54,73 @@ export class RoomService {
       page,
       last_page: Math.ceil(total / limit),
     };
+  }
+
+  async createRoom(payload: {
+    createRoomDto: CreateRoomDto;
+    lang: string;
+    imageUrl: string | null;
+  }) {
+    const { createRoomDto, lang, imageUrl } = payload;
+
+    const room = await this.roomRepository.findOne({
+      where: { room_number: createRoomDto.room_number },
+    });
+
+    if (room) {
+      throw new RpcException({
+        message: this.i18n.t('room.EXISTS', { lang }),
+        status: 409, // Conflict
+      });
+    }
+
+    const newRoom = this.roomRepository.create({
+      ...createRoomDto,
+      image: imageUrl,
+    });
+
+    return this.roomRepository.save(newRoom);
+  }
+
+  async updateRoomInfo(
+    id: number,
+    updateRoomDto: UpdateRoomDto,
+    lang: string,
+  ): Promise<Room | null> {
+    const room = await this.roomRepository.findOneBy({ id });
+    if (!room) {
+      throw new RpcException({
+        message: this.i18n.t('room.NOT_FOUND', { lang, args: { id } }),
+        status: 404, // Not Found
+      });
+    }
+    await this.roomRepository.update(id, updateRoomDto);
+
+    return await this.roomRepository.findOneBy({ id });
+  }
+
+  async updateRoomImage(roomId: number, imageUrl: string): Promise<void> {
+    this.logger.log(`Received request to update image for room ID: ${roomId}`);
+    try {
+      await this.roomRepository.update(roomId, { image: imageUrl });
+      this.logger.log(`Successfully updated image for room ID: ${roomId}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to update image for room ID: ${roomId}`,
+        (error as Error).stack,
+      );
+    }
+  }
+
+  async deleteRoom(id: number, lang: string): Promise<Room | null> {
+    const room = await this.roomRepository.findOneBy({ id });
+    if (!room) {
+      throw new RpcException({
+        message: this.i18n.t('room.NOT_FOUND', { lang, args: { id } }),
+        status: 404, // Not Found
+      });
+    }
+    await this.roomRepository.delete(id);
+    return room;
   }
 }
