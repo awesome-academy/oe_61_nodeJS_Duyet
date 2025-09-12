@@ -14,6 +14,7 @@ import googleOauthConfig from 'libs/config/google-oauth.config';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { AuthModule } from 'apps/auth/src/auth.module';
 import { RoomController } from './room.controller';
+import { AdminRoomController } from './admin-room.controller';
 
 @Module({
   imports: [
@@ -48,6 +49,14 @@ import { RoomController } from './room.controller';
           port: 3002,
         },
       },
+      {
+        name: 'UPLOAD_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 3003,
+        },
+      },
     ]),
     BullModule.forRoot({
       redis: {
@@ -62,6 +71,7 @@ import { RoomController } from './room.controller';
     AuthController,
     UserAuthController,
     RoomController,
+    AdminRoomController,
   ],
   providers: [
     GatewayService,

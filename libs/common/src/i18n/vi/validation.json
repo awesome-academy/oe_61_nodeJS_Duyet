@@ -3,5 +3,10 @@
   "IS_EMAIL": "{property} phải là một địa chỉ email hợp lệ.",
   "MIN_LENGTH": "{property} phải có độ dài lớn hơn hoặc bằng {constraints.0} ký tự.",
   "MAX_LENGTH": "{property} phải có độ dài nhỏ hơn hoặc bằng {constraints.0} ký tự.",
-  "IS_UUID": "{property} phải là một UUID hợp lệ."
+  "IS_UUID": "{property} phải là một UUID hợp lệ.",
+  "IS_STRING": "{property} phải là một chuỗi.",
+  "IS_INT": "{property} phải là một số nguyên.",
+  "IS_BOOLEAN": "{property} phải là một giá trị boolean (true/false).",
+  "IS_NUMBER": "{property} phải là một số.",
+  "MIN": "{property} không được nhỏ hơn {constraints.0}."
 }
