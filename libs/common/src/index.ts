@@ -10,3 +10,5 @@ export * from './dto/forgot-password.dto';
 export * from './dto/reset-password.dto';
 export * from './dto/register-user.dto';
 export * from './dto/verify-token.dto';
+export * from './dto/list-user.dto';
+export * from './guards/roles.guard';
