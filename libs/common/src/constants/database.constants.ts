@@ -4,6 +4,8 @@ export const CUSTOMER_ID = 3;
 export const PAGE = 1;
 export const LIMIT = 10;
 export const TOKEN_EXPIRES_HOURS = 1;
+export const FILE_SIZE = 1024 * 1024 * 5; // 5MB
+export const ALLOWED_FILE_TYPES = '.(png|jpeg|jpg)';
 
 export enum BookingStatus {
   CANCELED = 0,
@@ -71,4 +73,20 @@ export interface OAuthUser {
   email: string;
   name: string;
   avatar: string | null;
+}
+
+interface SerializedFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  buffer: {
+    type: 'Buffer';
+    data: number[];
+  };
+  size: number;
+}
+export interface UploadPayload {
+  file: SerializedFile;
+  roomId: number;
 }

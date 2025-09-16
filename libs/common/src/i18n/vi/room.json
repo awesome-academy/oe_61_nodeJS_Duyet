@@ -1,0 +1,10 @@
+{
+  "EXISTS": "Phòng này đã tồn tại",
+  "CREATED_SUCCESS": "Tạo phòng thành công, ảnh đang được tải trong nền",
+  "UPDATED_SUCCESS": "Cập nhật phòng thành công, ảnh đang được tải trong nền",
+  "DELETED_SUCCESS": "Xóa phòng thành công",
+  "NOT_FOUND": "Không tìm thấy phòng",
+  "CREATE_FAILED": "Tạo phòng thất bại",
+  "UPDATE_FAILED": "Cập nhật phòng thất bại",
+  "DELETE_FAILED": "Xóa phòng thất bại"
+}
