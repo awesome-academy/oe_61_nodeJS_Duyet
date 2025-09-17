@@ -1,0 +1,10 @@
+
+{
+  "rules": {
+    "C019": true,
+    "C029": "error",
+    "S009": "warn"
+  },
+  "languages": ["typescript", "dart"],
+  "include": ["src/**/*.ts", "lib/**/*.dart"]
+}
