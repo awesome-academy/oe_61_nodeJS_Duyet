@@ -15,11 +15,9 @@
     ".git/**"
   ],
   "include": [
-    "apps/",
     "src/**/*.ts",
     "src/**/*.tsx",
     "lib/**/*.dart",
-    "lib/**/*.ts",
     "test/**/*.ts",
     "test/**/*.dart"
   ],
