@@ -6,5 +6,6 @@
   "NOT_FOUND": "Không tìm thấy phòng",
   "CREATE_FAILED": "Tạo phòng thất bại",
   "UPDATE_FAILED": "Cập nhật phòng thất bại",
-  "DELETE_FAILED": "Xóa phòng thất bại"
+  "DELETE_FAILED": "Xóa phòng thất bại",
+  "CANNOT_DELETE_OCCUPIED": "Phòng đã được đặt, không thể xóa."
 }

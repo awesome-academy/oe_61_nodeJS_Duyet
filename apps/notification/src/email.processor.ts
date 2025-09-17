@@ -3,6 +3,9 @@ import { Job } from 'bull';
 import { MailerService } from '@nestjs-modules/mailer';
 import { Logger } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
+import { Invoice } from '@app/database';
+import { toLocaleDateStringByLang } from 'libs/utils/date.util';
+import { tGroup } from 'libs/utils/i18n.util';
 
 @Processor('emails')
 export class EmailProcessor {
@@ -141,6 +144,61 @@ export class EmailProcessor {
     } catch (error) {
       this.logger.error(
         `Gửi email đặt lại mật khẩu tới ${email} thất bại`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  @Process('send-booking-confirmation-email')
+  async handleSendBookingConfirmationEmail(
+    job: Job<{ email: string; name: string; lang: string; invoice: Invoice }>,
+  ) {
+    const { email, name, lang, invoice } = job.data;
+    this.logger.log(
+      `Sending booking confirmation email to ${email} for invoice ${invoice.id}`,
+    );
+
+    try {
+      const t = tGroup(this.i18n, 'mail.TEMPLATE.BOOKING_CONFIRMATION', lang);
+
+      await this.mailerService.sendMail({
+        to: email,
+        subject: this.i18n.t('mail.BOOKING_CONFIRMATION_SUBJECT', {
+          lang,
+          args: { invoiceCode: invoice.invoice_code },
+        }),
+        template: 'booking',
+        context: {
+          name,
+          invoice,
+          startTime: toLocaleDateStringByLang(invoice.booking.start_time, lang),
+          endTime: toLocaleDateStringByLang(invoice.booking.end_time, lang),
+          subject: this.i18n.t('mail.BOOKING_CONFIRMATION_SUBJECT', {
+            lang,
+            args: { invoiceCode: invoice.invoice_code },
+          }),
+          header: t('HEADER'),
+          greeting: this.i18n.t('mail.TEMPLATE.GREETING', { lang }),
+          message: t('MESSAGE'),
+          footer: t('FOOTER'),
+          chi_tiet_dat_phong: t('DETAILS_HEADER'),
+          ma_hoa_don: t('INVOICE_CODE'),
+          ngay_nhan_phong: t('CHECK_IN_DATE'),
+          ngay_tra_phong: t('CHECK_OUT_DATE'),
+          cac_phong_da_dat: t('BOOKED_ROOMS'),
+          phong: t('ROOM'),
+          dem: t('PRICE_PER_NIGHT'),
+          tong_thanh_toan: t('TOTAL_PAYMENT'),
+        },
+      });
+
+      this.logger.log(
+        `Booking confirmation email sent successfully to ${email}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send booking confirmation email to ${email}`,
         (error as Error).stack,
       );
       throw error;

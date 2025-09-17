@@ -95,3 +95,12 @@ export interface UserUploadPayload {
   file: SerializedFile;
   userId: number;
 }
+export interface AuthRequest extends Request {
+  user?: JwtPayload;
+}
+
+export interface MicroserviceResponse<T = unknown> {
+  status: 'success' | 'failed' | 'error';
+  message?: string;
+  data?: T;
+}

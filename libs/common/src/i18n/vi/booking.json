@@ -1,0 +1,14 @@
+{
+  "SUCCESS": "Thanh toán thành công! Đơn đặt phòng của bạn đã được xác nhận.",
+  "FAILED": "Thanh toán thất bại. Vui lòng thử lại hoặc chọn phương thức thanh toán khác.",
+  "INVALID_SIGNATURE": "Lỗi xác thực thanh toán. Vui lòng liên hệ bộ phận hỗ trợ.",
+  "INVALID_TIME": "Ngày trả phòng phải sau ngày nhận phòng.",
+  "ROOM_REQUIRED": "Phải chọn ít nhất một phòng.",
+  "ROOM_NOT_FOUND": "Một hoặc nhiều phòng không tồn tại.",
+  "SERVICE_NOT_FOUND": "Một hoặc nhiều dịch vụ không tồn tại.",
+  "ROOM_NOT_AVAILABLE": "Một hoặc nhiều phòng không khả dụng trong thời gian chọn.",
+  "QUANTITY_MISMATCH": "Số lượng dịch vụ phải khớp với số lượng yêu cầu.",
+  "START_TIME_PAST": "Thời gian bắt đầu không được ở trong quá khứ.",
+  "NOT_FOUND": "Đơn đặt phòng không tồn tại.",
+  "FORBIDDEN_ACCESS": "Không được phép truy cập"
+}
