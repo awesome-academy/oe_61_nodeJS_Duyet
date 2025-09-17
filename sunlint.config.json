@@ -1,10 +1,85 @@
-
 {
   "rules": {
     "C019": true,
     "C029": "error",
-    "S009": "warn"
+    "C006": "off",
+    "C031": true
   },
-  "languages": ["typescript", "dart"],
-  "include": ["src/**/*.ts", "lib/**/*.dart"]
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/*.generated.*",
+    "**/*.min.*",
+    "coverage/**",
+    ".git/**"
+  ],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "lib/**/*.dart",
+    "test/**/*.ts",
+    "test/**/*.dart"
+  ],
+  "languages": [
+    "typescript",
+    "dart"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2024,
+    "sourceType": "module",
+    "project": [
+      "./tsconfig.json",
+      "./packages/*/tsconfig.json"
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.spec.ts"
+      ],
+      "rules": {
+        "C019": "warn"
+      }
+    },
+    {
+      "files": [
+        "scripts/**/*.js"
+      ],
+      "rules": {
+        "C029": "off"
+      }
+    }
+  ],
+  "ai": {
+    "enabled": true,
+    "provider": "openai",
+    "model": "gpt-4o-mini",
+    "apiKey": "${OPENAI_API_KEY}",
+    "fallbackToPattern": true,
+    "maxTokens": 1000,
+    "temperature": 0.1
+  },
+  "output": {
+    "format": "eslint",
+    "file": "./reports/sunlint-report.json",
+    "console": true,
+    "summary": true,
+    "verbose": false
+  },
+  "performance": {
+    "maxConcurrentRules": 5,
+    "timeoutMs": 30000,
+    "cacheEnabled": true,
+    "cacheLocation": ".sunlint-cache/"
+  },
+  "reporting": {
+    "includeContext": true,
+    "showFixSuggestions": true,
+    "groupByFile": true,
+    "sortBy": "severity",
+    "showProgress": true,
+    "exitOnError": true
+  }
 }
