@@ -24,3 +24,4 @@ export * from './dto/vnpay-return.dto';
 export * from './dto/create-booking.dto';
 export * from './dto/list-booking.dto';
 export * from './dto/response.dto';
+export * from './dto/list-invoice.dto';
