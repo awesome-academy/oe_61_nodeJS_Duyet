@@ -16,6 +16,7 @@ import { AuthModule } from 'apps/auth/src/auth.module';
 import { RoomController } from './room.controller';
 import { AdminUserController } from './admin-user.controller';
 import { AdminRoomController } from './admin-room.controller';
+import { AdminServiceController } from './admin-service.controller';
 
 @Module({
   imports: [
@@ -33,38 +34,66 @@ import { AdminRoomController } from './admin-room.controller';
       }),
     }),
     CommonModule,
-    ClientsModule.register([
+    ClientsModule.registerAsync([
       {
         name: 'AUTH_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 3001,
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('AUTH_SERVICE_PORT'),
+          },
+        }),
       },
       {
         name: 'ROOM_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 3002,
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('ROOM_SERVICE_PORT'),
+          },
+        }),
       },
       {
         name: 'USER_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 3004,
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('USER_SERVICE_PORT'),
+          },
+        }),
       },
       {
         name: 'UPLOAD_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 3003,
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('UPLOAD_SERVICE_PORT'),
+          },
+        }),
+      },
+      {
+        name: 'SERVICE_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('SERVICE_SERVICE_PORT'),
+          },
+        }),
       },
     ]),
     BullModule.forRoot({
@@ -82,6 +111,7 @@ import { AdminRoomController } from './admin-room.controller';
     RoomController,
     AdminUserController,
     AdminRoomController,
+    AdminServiceController,
   ],
   providers: [
     GatewayService,
