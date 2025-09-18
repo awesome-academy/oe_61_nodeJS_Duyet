@@ -25,6 +25,8 @@ describe('UploadController', () => {
 
     controller = module.get<UploadController>(UploadController);
     cloudinaryService = module.get<CloudinaryService>(CloudinaryService);
+    jest.spyOn(controller['logger'], 'log').mockImplementation(() => {});
+    jest.spyOn(controller['logger'], 'error').mockImplementation(() => {});
   });
 
   // Clean up mocks after each test

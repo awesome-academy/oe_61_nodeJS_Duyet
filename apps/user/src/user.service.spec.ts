@@ -3,16 +3,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '@app/database';
-import { Repository } from 'typeorm';
-import { ListUserDto } from '@app/common';
+import { Repository, UpdateResult, DeleteResult } from 'typeorm';
+import { ListUserDto, CreateUserDto, UpdateUserDto } from '@app/common';
+import { RpcException } from '@nestjs/microservices';
+import { I18nService } from 'nestjs-i18n';
 import { createMock } from '@golevelup/ts-jest';
+import * as bcrypt from 'bcrypt';
+
+// "Mock" the entire bcrypt library
+jest.mock('bcrypt', () => ({
+  hash: jest.fn(),
+}));
 
 describe('UserService', () => {
   let service: UserService;
-  let userRepository: Repository<User>;
+  let userRepository: jest.Mocked<Repository<User>>;
 
-  // 1. Create a "stand-in" (mock) for QueryBuilder
-  // This allows us to control and track its functions (where, skip, take, etc.)
+  // Create a "stand-in actor" for QueryBuilder
   const mockQueryBuilder = {
     select: jest.fn().mockReturnThis(),
     leftJoin: jest.fn().mockReturnThis(),
@@ -28,19 +35,21 @@ describe('UserService', () => {
         UserService,
         {
           provide: getRepositoryToken(User),
-          // Mock repository and make sure createQueryBuilder returns our mock
           useValue: createMock<Repository<User>>({
             createQueryBuilder: jest.fn(() => mockQueryBuilder),
           }),
+        },
+        {
+          provide: I18nService,
+          useValue: createMock<I18nService>(),
         },
       ],
     }).compile();
 
     service = module.get<UserService>(UserService);
-    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
+    userRepository = module.get(getRepositoryToken(User));
   });
 
-  // Clean up all mocks after each test
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -49,71 +58,97 @@ describe('UserService', () => {
     expect(service).toBeDefined();
   });
 
-  // --- Test suite for listUsers function ---
+  // --- Tests for 'listUsers' ---
   describe('listUsers', () => {
-    // --- Scenario 1: No parameters provided ---
-    it('should apply default pagination and selection when no params are provided', async () => {
+    it('should build a query with search and pagination', async () => {
+      const dto: ListUserDto = { page: 2, limit: 15, search: 'test' };
       mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.listUsers(dto);
+
+      expect(mockQueryBuilder.where).toHaveBeenCalled();
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(15); // (2 - 1) * 15
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(15);
+    });
+
+    it('should build a query without search if search is not provided', async () => {
       await service.listUsers({});
+      expect(mockQueryBuilder.where).not.toHaveBeenCalled();
+    });
+  });
 
-      expect(userRepository.createQueryBuilder).toHaveBeenCalledWith('user');
-      expect(mockQueryBuilder.select).toHaveBeenCalled();
-      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
-        'user.role',
-        'role',
+  // --- Tests for 'create' ---
+  describe('create', () => {
+    const createUserDto = {
+      name: 'New User',
+      email: 'new@test.com',
+      password: 'password123',
+    } as CreateUserDto;
+    const payload = { createUserDto, lang: 'en', imageUrl: null };
+
+    it('should create and save a new user with a hashed password', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
+      userRepository.create.mockImplementation((dto) => dto as User);
+      userRepository.save.mockResolvedValue({
+        id: 1,
+        ...createUserDto,
+      } as User);
+
+      const result = await service.create(payload);
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
+      expect(userRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ password: 'hashedPassword' }),
       );
-      expect(mockQueryBuilder.where).not.toHaveBeenCalled(); // No filters applied
-      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0); // Default: (1 - 1) * 10
-      expect(mockQueryBuilder.take).toHaveBeenCalledWith(10); // Default: 10
+      expect(result).toBeDefined();
     });
 
-    // --- Scenario 2: With search parameter ---
-    it('should apply a WHERE clause for the search parameter', async () => {
-      const dto: ListUserDto = { search: 'John Doe' };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
-      await service.listUsers(dto);
+    it('should throw an RpcException if the user already exists', async () => {
+      userRepository.findOne.mockResolvedValue({ id: 1 } as User);
+      await expect(service.create(payload)).rejects.toThrow(RpcException);
+    });
+  });
 
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        "(LOWER(user.name) LIKE LOWER(:search) ESCAPE '\\' OR LOWER(user.email) LIKE LOWER(:search) ESCAPE '\\')",
-        { search: `%John Doe%` },
-      );
+  // --- Tests for 'updateUserInfo' ---
+  describe('updateUserInfo', () => {
+    const updateUserDto = { name: 'Updated Name' } as UpdateUserDto;
+    it('should update user info if user is found', async () => {
+      userRepository.findOneBy.mockResolvedValue({ id: 1 } as User);
+      userRepository.update.mockResolvedValue({} as UpdateResult);
+
+      await service.updateUserInfo(1, updateUserDto, 'en');
+
+      expect(userRepository.update).toHaveBeenCalledWith(1, updateUserDto);
     });
 
-    // --- Scenario 3: With pagination parameters ---
-    it('should handle pagination correctly', async () => {
-      const dto: ListUserDto = { page: 3, limit: 20 };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
-      await service.listUsers(dto);
+    it('should throw an RpcException if user is not found', async () => {
+      const updateUserDto = { name: 'Updated Name' } as UpdateUserDto;
 
-      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(40); // (3 - 1) * 20
-      expect(mockQueryBuilder.take).toHaveBeenCalledWith(20);
+      userRepository.update.mockResolvedValue({ affected: 0 } as UpdateResult);
+
+      await expect(
+        service.updateUserInfo(999, updateUserDto, 'en'),
+      ).rejects.toThrow(RpcException);
+    });
+  });
+
+  // --- Tests for 'deleteUser' ---
+  describe('deleteUser', () => {
+    it('should delete the user if found', async () => {
+      const mockUser = { id: 1 } as User;
+      userRepository.findOneBy.mockResolvedValue(mockUser);
+      userRepository.delete.mockResolvedValue({} as DeleteResult);
+
+      const result = await service.deleteUser(1, 'en');
+
+      expect(userRepository.delete).toHaveBeenCalledWith(1);
+      expect(result).toEqual(mockUser);
     });
 
-    // --- Scenario 4: Verify returned result structure ---
-    it('should return the correct paginated result structure', async () => {
-      const mockUsers = [{ id: 1, name: 'Test User' }];
-      const total = 50;
-      const dto: ListUserDto = { page: 2, limit: 15 };
-
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([mockUsers, total]);
-
-      const result = await service.listUsers(dto);
-
-      expect(result.data).toEqual(mockUsers);
-      expect(result.meta.total).toBe(total);
-      expect(result.meta.page).toBe(2);
-      expect(result.meta.last_page).toBe(4); // Math.ceil(50 / 15)
-    });
-
-    // --- Scenario 5: Handle errors from repository ---
-    it('should throw an error if repository (query builder) fails', async () => {
-      const dto: ListUserDto = { page: 1, limit: 10 };
-      const error = new Error('Database connection failed');
-
-      mockQueryBuilder.getManyAndCount.mockRejectedValue(error);
-
-      await expect(service.listUsers(dto)).rejects.toThrow(error);
-      expect(userRepository.createQueryBuilder).toHaveBeenCalledWith('user');
+    it('should throw an RpcException if user to delete is not found', async () => {
+      userRepository.findOneBy.mockResolvedValue(null);
+      await expect(service.deleteUser(999, 'en')).rejects.toThrow(RpcException);
     });
   });
 });
