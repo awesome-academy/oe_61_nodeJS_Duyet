@@ -25,3 +25,6 @@ export * from './dto/create-booking.dto';
 export * from './dto/list-booking.dto';
 export * from './dto/response.dto';
 export * from './dto/list-invoice.dto';
+export * from './dto/list-service.dto';
+export * from './dto/create-service.dto';
+export * from './dto/update-service.dto';
