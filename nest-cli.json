@@ -84,13 +84,13 @@
         "tsConfigPath": "apps/room/tsconfig.app.json"
       }
     },
-    "user": {
+    "service": {
       "type": "application",
-      "root": "apps/user",
+      "root": "apps/service",
       "entryFile": "main",
-      "sourceRoot": "apps/user/src",
+      "sourceRoot": "apps/service/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/user/tsconfig.app.json"
+        "tsConfigPath": "apps/service/tsconfig.app.json"
       }
     },
     "upload": {
@@ -100,6 +100,15 @@
       "sourceRoot": "apps/upload/src",
       "compilerOptions": {
         "tsConfigPath": "apps/upload/tsconfig.app.json"
+      }
+    },
+    "user": {
+      "type": "application",
+      "root": "apps/user",
+      "entryFile": "main",
+      "sourceRoot": "apps/user/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/user/tsconfig.app.json"
       }
     }
   }

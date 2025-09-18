@@ -16,6 +16,7 @@ import { AuthModule } from 'apps/auth/src/auth.module';
 import { RoomController } from './room.controller';
 import { AdminUserController } from './admin-user.controller';
 import { AdminRoomController } from './admin-room.controller';
+import { AdminServiceController } from './admin-service.controller';
 
 @Module({
   imports: [
@@ -66,6 +67,14 @@ import { AdminRoomController } from './admin-room.controller';
           port: 3003,
         },
       },
+      {
+        name: 'SERVICE_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 3007,
+        },
+      },
     ]),
     BullModule.forRoot({
       redis: {
@@ -82,6 +91,7 @@ import { AdminRoomController } from './admin-room.controller';
     RoomController,
     AdminUserController,
     AdminRoomController,
+    AdminServiceController,
   ],
   providers: [
     GatewayService,
