@@ -1,0 +1,8 @@
+{
+  "EXISTS": "Service already exists",
+  "NOT_FOUND": "Service with ID {{id}} not found",
+  "CREATED_SUCCESS": "Service created successfully.",
+  "UPDATED_SUCCESS": "Service updated successfully.",
+  "DELETED_SUCCESS": "Service deleted successfully.",
+  "DELETE_CONFLICT": "Cannot delete service with id {{id}} because it is referenced by other records"
+}
