@@ -6,5 +6,6 @@
   "NOT_FOUND": "Room not found",
   "CREATE_FAILED": "Failed to create room",
   "UPDATE_FAILED": "Failed to update room",
-  "DELETE_FAILED": "Failed to delete room"
+  "DELETE_FAILED": "Failed to delete room",
+  "CANNOT_DELETE_OCCUPIED": "The room has been booked and cannot be deleted."
 }

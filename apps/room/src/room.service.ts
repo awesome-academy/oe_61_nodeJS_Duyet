@@ -3,7 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Room } from '@app/database';
 import { Repository } from 'typeorm';
 import { ListRoomDto } from '@app/common/dto/list-room.dto';
-import { CreateRoomDto, LIMIT, PAGE, UpdateRoomDto } from '@app/common';
+import {
+  CreateRoomDto,
+  LIMIT,
+  PAGE,
+  UpdateRoomDto,
+} from '@app/common';
 import { RpcException } from '@nestjs/microservices';
 import { I18nService } from 'nestjs-i18n';
 
@@ -118,13 +123,32 @@ export class RoomService {
   }
 
   async deleteRoom(id: number, lang: string): Promise<Room | null> {
-    const existingRoom = await this.roomRepository.findOneBy({ id });
+    const existingRoom = await this.roomRepository.findOne({
+      where: { id },
+      relations: ['bookingRooms', 'bookingRooms.booking'],
+    });
     if (!existingRoom) {
       throw new RpcException({
         message: this.i18n.t('room.NOT_FOUND', { lang, args: { id } }),
         status: 404, // Not Found
       });
     }
+
+    const now = new Date();
+
+    const hasActiveOrFutureBooking = existingRoom.bookingRooms.some(
+      (br) =>
+        br.booking &&
+        (br.booking.start_time > now || br.booking.end_time > now),
+    );
+    console.log(hasActiveOrFutureBooking);
+    if (hasActiveOrFutureBooking) {
+      throw new RpcException({
+        message: this.i18n.t('room.CANNOT_DELETE_OCCUPIED', { lang }),
+        status: 400, // Bad Request
+      });
+    }
+
     await this.roomRepository.delete(id);
     return existingRoom;
   }
