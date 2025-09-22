@@ -17,6 +17,7 @@ import { RoomController } from './room.controller';
 import { AdminUserController } from './admin-user.controller';
 import { AdminRoomController } from './admin-room.controller';
 import { BookingController } from './booking.controller';
+import { AdminInvoiceController } from './admin-invoice.controller';
 
 @Module({
   imports: [
@@ -75,6 +76,14 @@ import { BookingController } from './booking.controller';
           port: 3006,
         },
       },
+      {
+        name: 'PAYMENT_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 3008,
+        },
+      },
     ]),
     BullModule.forRoot({
       redis: {
@@ -92,6 +101,7 @@ import { BookingController } from './booking.controller';
     AdminUserController,
     AdminRoomController,
     BookingController,
+    AdminInvoiceController,
   ],
   providers: [
     GatewayService,

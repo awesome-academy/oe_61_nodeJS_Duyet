@@ -220,25 +220,50 @@ describe('RoomService', () => {
   // --- Test Suite for deleteRoom ---
   describe('deleteRoom', () => {
     it('should throw if room not found', async () => {
-      roomRepository.findOneBy.mockResolvedValue(null);
-
+      roomRepository.findOne.mockResolvedValue(null);
       await expect(service.deleteRoom(1, 'en')).rejects.toThrow(RpcException);
-
       expect(i18n.t).toHaveBeenCalledWith('room.NOT_FOUND', {
         lang: 'en',
         args: { id: 1 },
       });
     });
 
-    it('should delete and return the room if exists', async () => {
-      const room = { id: 1, room_number: '101' } as Room;
-      roomRepository.findOneBy.mockResolvedValue(room);
+    it('should delete and return the room if it exists and is not booked', async () => {
+      const room = {
+        id: 1,
+        room_number: '101',
+        bookingRooms: [],
+      } as unknown as Room;
+
+      roomRepository.findOne.mockResolvedValue(room);
       roomRepository.delete.mockResolvedValue({ affected: 1 } as DeleteResult);
 
       const result = await service.deleteRoom(1, 'en');
 
       expect(roomRepository.delete).toHaveBeenCalledWith(1);
       expect(result).toEqual(room);
+    });
+
+    it('should throw error if room has active or future bookings', async () => {
+      const futureDate = new Date('2026-01-01');
+      const roomWithBooking = {
+        id: 1,
+        room_number: '101',
+        bookingRooms: [
+          {
+            booking: {
+              start_time: futureDate,
+              end_time: new Date('2026-01-02'),
+            },
+          },
+        ],
+      } as unknown as Room;
+      roomRepository.findOne.mockResolvedValue(roomWithBooking);
+      await expect(service.deleteRoom(1, 'en')).rejects.toThrow(RpcException);
+      expect(i18n.t).toHaveBeenCalledWith('room.CANNOT_DELETE_OCCUPIED', {
+        lang: 'en',
+      });
+      expect(roomRepository.delete).not.toHaveBeenCalled();
     });
   });
 

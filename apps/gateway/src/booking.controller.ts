@@ -6,7 +6,6 @@ import {
   Post,
   Query,
   Req,
-  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -91,10 +90,7 @@ export class BookingController {
 
   @Get('vnpay_return')
   @Public()
-  async handleVnpayReturn(
-    @Query() vnpayReturnDto: VnpayReturnDto,
-    @Res() res: Response,
-  ) {
+  async handleVnpayReturn(@Query() vnpayReturnDto: VnpayReturnDto) {
     try {
       const lang = 'vi';
       const result = await firstValueFrom<MicroserviceResponse>(
@@ -102,20 +98,20 @@ export class BookingController {
       );
 
       if (result.status === 'success') {
-        return res.json({
-          status: result.status,
-          message: result.message || this.i18n.t('booking.SUCCESS', { lang }),
-          data: (result.data as string) || null,
-        });
+        return new ResponseDto(
+          'success',
+          result.message || this.i18n.t('booking.SUCCESS', { lang }),
+          result.data,
+        );
       } else if (result.status === 'failed' || result.status === 'error') {
-        return res.json({
-          status: result.status,
-          message: result.message || this.i18n.t('booking.FAILED', { lang }),
-          data: (result.data as string) || {
+        return new ResponseDto(
+          result.status,
+          result.message || this.i18n.t('booking.FAILED', { lang }),
+          result.data || {
             txnRef: vnpayReturnDto.vnp_TxnRef,
             responseCode: vnpayReturnDto.vnp_ResponseCode,
           },
-        });
+        );
       } else {
         return new ResponseDto(
           'error',
