@@ -1,0 +1,8 @@
+{
+  "EXISTS": "Dịch vụ đã tồn tại",
+  "NOT_FOUND": "Không tìm thấy dịch vụ với ID {{id}}",
+  "CREATED_SUCCESS": "Tạo dịch vụ thành công.",
+  "UPDATED_SUCCESS": "Cập nhật dịch vụ thành công.",
+  "DELETED_SUCCESS": "Xóa dịch vụ thành công.",
+  "DELETE_CONFLICT": "Không thể xóa dịch vụ với id {{id}} vì đang được tham chiếu bởi dữ liệu khác"
+}

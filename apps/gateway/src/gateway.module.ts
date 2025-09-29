@@ -18,6 +18,7 @@ import { AdminUserController } from './admin-user.controller';
 import { AdminRoomController } from './admin-room.controller';
 import { BookingController } from './booking.controller';
 import { AdminInvoiceController } from './admin-invoice.controller';
+import { AdminServiceController } from './admin-service.controller';
 
 @Module({
   imports: [
@@ -35,54 +36,90 @@ import { AdminInvoiceController } from './admin-invoice.controller';
       }),
     }),
     CommonModule,
-    ClientsModule.register([
+    ClientsModule.registerAsync([
       {
         name: 'AUTH_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 3001,
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('AUTH_SERVICE_PORT'),
+          },
+        }),
       },
       {
         name: 'ROOM_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 3002,
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('ROOM_SERVICE_PORT'),
+          },
+        }),
       },
       {
         name: 'USER_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 3004,
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('USER_SERVICE_PORT'),
+          },
+        }),
       },
       {
         name: 'UPLOAD_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 3003,
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('UPLOAD_SERVICE_PORT'),
+          },
+        }),
+      },
+      {
+        name: 'SERVICE_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('SERVICE_SERVICE_PORT'),
+          },
+        }),
       },
       {
         name: 'BOOKING_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 3006,
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('BOOKING_SERVICE_PORT'),
+          },
+        }),
       },
       {
         name: 'PAYMENT_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: '127.0.0.1',
-          port: 3008,
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('SERVICE_HOST'),
+            port: configService.get<number>('INVOICE_SERVICE_PORT'),
+          },
+        }),
       },
     ]),
     BullModule.forRoot({
@@ -102,6 +139,7 @@ import { AdminInvoiceController } from './admin-invoice.controller';
     AdminRoomController,
     BookingController,
     AdminInvoiceController,
+    AdminServiceController,
   ],
   providers: [
     GatewayService,
