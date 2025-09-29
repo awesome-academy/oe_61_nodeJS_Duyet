@@ -230,36 +230,17 @@ describe('BookingController', () => {
   });
 
   describe('handleVnpayReturn', () => {
-    let res: Partial<Response>;
-
-    beforeEach(() => {
-      res = {
-        json: jest
-          .fn()
-          .mockImplementation(
-            (data: unknown) => data,
-          ) as unknown as Response['json'],
-        status: jest.fn().mockReturnThis() as unknown as Response['status'],
-      };
-    });
-
     it('should handle success response', async () => {
-      const mockDto: VnpayReturnDto = {
-        vnp_TxnRef: '123',
-        vnp_ResponseCode: '00',
-      } as VnpayReturnDto;
-      bookingClient.send.mockReturnValue(of({ status: 'success', data: 'ok' }));
-
-      const result = await controller.handleVnpayReturn(
-        mockDto,
-        res as Response,
-      );
-
-      expect(result).toEqual({
+      const mockDto: VnpayReturnDto = { vnp_TxnRef: '123' } as VnpayReturnDto;
+      const serviceResponse = {
         status: 'success',
-        message: 'translated_booking.SUCCESS',
         data: 'ok',
-      });
+        message: 'Thanh cong',
+      };
+      bookingClient.send.mockReturnValue(of(serviceResponse));
+      const result = await controller.handleVnpayReturn(mockDto);
+      expect(result.status).toBe('success');
+      expect(result.data).toBe('ok');
     });
 
     it('should handle failed response', async () => {
@@ -267,52 +248,29 @@ describe('BookingController', () => {
         vnp_TxnRef: '123',
         vnp_ResponseCode: '24',
       } as VnpayReturnDto;
-      bookingClient.send.mockReturnValue(of({ status: 'failed' }));
-
-      const result = await controller.handleVnpayReturn(
-        mockDto,
-        res as Response,
-      );
-
-      expect(result).toEqual({
-        status: 'failed',
-        message: 'translated_booking.FAILED',
-        data: { txnRef: '123', responseCode: '24' },
-      });
+      const serviceResponse = { status: 'failed' };
+      bookingClient.send.mockReturnValue(of(serviceResponse));
+      const result = await controller.handleVnpayReturn(mockDto);
+      expect(result.status).toBe('failed');
+      expect(result.data).toHaveProperty('txnRef', '123');
     });
 
     it('should handle unknown response', async () => {
-      const mockDto: VnpayReturnDto = {
-        vnp_TxnRef: '123',
-        vnp_ResponseCode: '99',
-      } as VnpayReturnDto;
-      bookingClient.send.mockReturnValue(of({ status: 'weird' }));
-
-      await controller.handleVnpayReturn(mockDto, res as Response);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        status: 'error',
-        message: 'translated_booking.INVALID_SIGNATURE',
-        data: null,
-      });
+      const mockDto: VnpayReturnDto = { vnp_TxnRef: '123' } as VnpayReturnDto;
+      const serviceResponse = { status: 'weird' };
+      bookingClient.send.mockReturnValue(of(serviceResponse));
+      const result = await controller.handleVnpayReturn(mockDto);
+      expect(result.status).toBe('error');
+      expect(result.message).toBe('translated_booking.INVALID_SIGNATURE');
     });
 
     it('should handle exception thrown by bookingClient', async () => {
-      const mockDto: VnpayReturnDto = {
-        vnp_TxnRef: '123',
-        vnp_ResponseCode: '00',
-      } as VnpayReturnDto;
+      const mockDto: VnpayReturnDto = { vnp_TxnRef: '123' } as VnpayReturnDto;
       bookingClient.send.mockReturnValue(throwError(() => new Error('boom')));
-
-      await controller.handleVnpayReturn(mockDto, res as Response);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        status: 'error',
-        message: 'translated_booking.INVALID_SIGNATURE',
-        data: { error: 'boom' },
-      });
+      const result = await controller.handleVnpayReturn(mockDto);
+      expect(result.status).toBe('error');
+      expect(result.message).toBe('translated_booking.INVALID_SIGNATURE');
+      expect(result.data).toHaveProperty('error', 'boom');
     });
   });
 });

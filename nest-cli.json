@@ -84,6 +84,15 @@
         ]
       }
     },
+    "payment": {
+      "type": "application",
+      "root": "apps/payment",
+      "entryFile": "main",
+      "sourceRoot": "apps/payment/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/payment/tsconfig.app.json"
+      }
+    },
     "room": {
       "type": "application",
       "root": "apps/room",
@@ -102,15 +111,6 @@
         "tsConfigPath": "apps/upload/tsconfig.app.json"
       }
     },
-    "user": {
-      "type": "application",
-      "root": "apps/user",
-      "entryFile": "main",
-      "sourceRoot": "apps/user/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/user/tsconfig.app.json"
-      }
-    },
     "vnpay": {
       "type": "application",
       "root": "apps/vnpay",
@@ -118,6 +118,15 @@
       "sourceRoot": "apps/vnpay/src",
       "compilerOptions": {
         "tsConfigPath": "apps/vnpay/tsconfig.app.json"
+      }
+    },
+    "user": {
+      "type": "application",
+      "root": "apps/user",
+      "entryFile": "main",
+      "sourceRoot": "apps/user/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/user/tsconfig.app.json"
       }
     }
   }

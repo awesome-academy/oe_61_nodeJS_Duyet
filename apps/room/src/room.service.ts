@@ -3,12 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Room } from '@app/database';
 import { Repository } from 'typeorm';
 import { ListRoomDto } from '@app/common/dto/list-room.dto';
-import {
-  CreateRoomDto,
-  LIMIT,
-  PAGE,
-  UpdateRoomDto,
-} from '@app/common';
+import { CreateRoomDto, LIMIT, PAGE, UpdateRoomDto } from '@app/common';
 import { RpcException } from '@nestjs/microservices';
 import { I18nService } from 'nestjs-i18n';
 
@@ -141,7 +136,6 @@ export class RoomService {
         br.booking &&
         (br.booking.start_time > now || br.booking.end_time > now),
     );
-    console.log(hasActiveOrFutureBooking);
     if (hasActiveOrFutureBooking) {
       throw new RpcException({
         message: this.i18n.t('room.CANNOT_DELETE_OCCUPIED', { lang }),
